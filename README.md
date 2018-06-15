@@ -1,4 +1,5 @@
-#LOG735
+LOG735
+======
 
 This project uses [gradle][1] to manage dependencies and build artifacts. It is divided in 2 sub projects the client and
 the repository (which in our case act as the Zookeeper).
