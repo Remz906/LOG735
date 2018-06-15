@@ -1,0 +1,4 @@
+rootProject.name = 'log735-apps'
+
+include 'log735-registry'
+include 'log735-client'
