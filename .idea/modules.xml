@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-api/log735-api.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-api/log735-api.iml" group="log735-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-api/log735-api_main.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-api/log735-api_main.iml" group="log735-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-api/log735-api_test.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-api/log735-api_test.iml" group="log735-api" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-apps.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-apps.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-client/log735-client.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-client/log735-client.iml" group="log735-client" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-client/log735-client_main.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-client/log735-client_main.iml" group="log735-client" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-client/log735-client_test.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-client/log735-client_test.iml" group="log735-client" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-registry/log735-registry.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-registry/log735-registry.iml" group="log735-registry" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-registry/log735-registry_main.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-registry/log735-registry_main.iml" group="log735-registry" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/log735-registry/log735-registry_test.iml" filepath="$PROJECT_DIR$/.idea/modules/log735-registry/log735-registry_test.iml" group="log735-registry" />
+    </modules>
+  </component>
+</project>

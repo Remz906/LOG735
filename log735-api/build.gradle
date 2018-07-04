@@ -1,0 +1,8 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+dependencies {
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    compile group: 'com.google.guava', name: 'guava', version: '25.1-jre'
+
+}
