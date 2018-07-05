@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$/../../../log735-api">
       <excludeFolder url="file://$MODULE_DIR$/../../../log735-api/.gradle" />
       <excludeFolder url="file://$MODULE_DIR$/../../../log735-api/build" />
+      <excludeFolder url="file://$MODULE_DIR$/../../../log735-api/out" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

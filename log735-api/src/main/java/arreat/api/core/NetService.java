@@ -31,7 +31,7 @@ public final class NetService {
     }
 
     public void send(String string) throws UnknownHostException {
-        InetAddress address = InetAddress.getByName("127.0.0.1");
+        InetAddress address = InetAddress.getByName("10.196.121.172");
         this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, 1337));
     }
 

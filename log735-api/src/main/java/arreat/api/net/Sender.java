@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -15,10 +16,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class Sender {
 
-    private final ThreadPoolExecutor pool;
+    private final ExecutorService pool;
 
     public Sender(int poolSize) {
-        this.pool = (ThreadPoolExecutor) MoreExecutors.getExitingExecutorService(
+        this.pool = MoreExecutors.getExitingExecutorService(
                 (ThreadPoolExecutor) Executors.newFixedThreadPool(poolSize), 1000, TimeUnit.MILLISECONDS);
     }
 
