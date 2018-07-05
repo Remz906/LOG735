@@ -1,3 +1,4 @@
+import arreat.api.DataBase;
 import arreat.api.core.NetService;
 
 import java.net.UnknownHostException;
@@ -13,22 +14,16 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws UnknownHostException {
-
         if (args.length > 0) {
             switch (args[0]) {
                 case "client":
+                    System.out.println("yoooo");
+                    DataBase DB;
                     try {
-                        try {
-                            Class.forName("org.h2.Driver");
-                            Connection connection = DriverManager.getConnection("jdbc:h2:~/test", "test", "test");
-                            Statement statement = connection.createStatement();
-                            statement.execute("CREATE TABLE lapluie(NAME VARCHAR(20))");
-                            System.out.println("table");
-                            connection.close();
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    } catch (ClassNotFoundException e) {
+                        DB = new DataBase();
+                        DB.initDB();
+                        DB.newMessage("discussion", 1, "G4", "hello world");
+                    } catch (SQLException e) {
                         e.printStackTrace();
                     }
                     break;
@@ -42,21 +37,18 @@ public class Main {
         //this is not suppose to happen obviously
         else {
             System.out.println("YOOOOOOOO les arguments sont vide NigA!");
-        }
+            NetService net = NetService.getInstance();
+            Scanner scanner = new Scanner(System.in);
+            boolean loop = true;
 
+            while (loop) {
+                String value = scanner.next();
 
-        NetService net = NetService.getInstance();
+                loop = !"exit".equalsIgnoreCase(value);
 
-        Scanner scanner = new Scanner(System.in);
-        boolean loop = true;
-
-        while (loop) {
-            String value = scanner.next();
-
-            loop = !"exit".equalsIgnoreCase(value);
-
-            if (loop) {
-                net.send(value);
+                if (loop) {
+                    net.send(value);
+                }
             }
         }
     }
