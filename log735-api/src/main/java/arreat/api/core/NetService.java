@@ -20,19 +20,21 @@ public final class NetService {
     private final ExecutorService receiverService;
     private final Sender sender;
     private final byte[] buffer;
+    private final int portNb = 1337;
+    private final String ipAdd = "10.192.179.72";
 
     private NetService() throws SocketException {
         this.buffer = new byte[1024];
         this.receiverService = MoreExecutors.getExitingExecutorService(
                 (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
 
-        this.receiverService.submit(new Receiver(new DatagramSocket(1337), this.buffer));
+        this.receiverService.submit(new Receiver(new DatagramSocket(portNb), this.buffer));
         this.sender = new Sender(3);
     }
 
     public void send(String string) throws UnknownHostException {
-        InetAddress address = InetAddress.getByName("10.196.121.172");
-        this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, 1337));
+        InetAddress address = InetAddress.getByName(ipAdd);
+        this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, portNb));
     }
 
     public static synchronized NetService getInstance() {
