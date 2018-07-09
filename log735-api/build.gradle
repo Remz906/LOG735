@@ -11,6 +11,14 @@ version = '1.0'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
+dependencies {
+    testImplementation(
+            'org.junit.jupiter:junit-jupiter-api:5.1.0'
+    )
+    testRuntimeOnly(
+            'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+    )
+}
 
 jar {
     manifest {
@@ -28,5 +36,6 @@ jar {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
 }
+
 
 

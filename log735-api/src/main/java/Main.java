@@ -17,12 +17,13 @@ public class Main {
         if (args.length > 0) {
             switch (args[0]) {
                 case "client":
-                    System.out.println("yoooo");
                     DataBase DB;
                     try {
                         DB = new DataBase();
                         DB.initDB();
-                        DB.newMessage("discussion", 1, "G4", "hello world");
+                        DB.newMessage("discussion1", 1, "G4", "hello world");
+                        DB.newMessage("lapluie", 2, "pseudo2", "hello world2");
+                        DB.readMessages();
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }

@@ -1,9 +1,7 @@
 package arreat.api;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.ArrayList;
 
 public class DataBase {
     private Connection connection = DriverManager.getConnection("jdbc:h2:~/test","test", "test");
@@ -55,16 +53,24 @@ public class DataBase {
         }
     }
 
-    // Not working
-    public void readMessages(){
+    // Display all the data of the table HISTORICDISCUSSION
+    public ArrayList readMessages(){
         System.out.println("readMessage");
+        ArrayList dbElement = new ArrayList();
         try {
-            statement.execute("SELECT * FROM HISTORICDISCUSSION ");
-            //System.out.println(statement.getResultSet().getInt("timestamp"));
+            ResultSet rs = statement.executeQuery("SELECT * FROM HISTORICDISCUSSION ");
+            while(rs.next()) {
+                dbElement.add(rs.getString("DISCUSSIONNAME"));
+                dbElement.add(rs.getInt("TIMESTAMP"));
+                dbElement.add(rs.getString("SENDERPSEUDO"));
+                dbElement.add(rs.getString("MESSAGE"));
+            }
+            rs.close();
         } catch (SQLException e) {
-            System.out.println("nop");
             e.printStackTrace();
+            dbElement.add("error");
         }
+        return dbElement;
     }
 
 }
