@@ -1,7 +1,7 @@
-package arreat.api.core;
+package arreat.impl.core;
 
-import arreat.api.net.Receiver;
-import arreat.api.net.Sender;
+import arreat.impl.net.Receiver;
+import arreat.impl.net.Sender;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import java.net.*;
@@ -20,21 +20,21 @@ public final class NetService {
     private final ExecutorService receiverService;
     private final Sender sender;
     private final byte[] buffer;
-    private final int portNb = 1337;
-    private final String ipAdd = "10.192.179.72";
+    private static final int PORT_NUMBER = 1337;
+    private static final String IP_ADDRESS = "127.0.0.1";
 
     private NetService() throws SocketException {
         this.buffer = new byte[1024];
         this.receiverService = MoreExecutors.getExitingExecutorService(
                 (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
 
-        this.receiverService.submit(new Receiver(new DatagramSocket(portNb), this.buffer));
+        this.receiverService.submit(new Receiver(new DatagramSocket(PORT_NUMBER), this.buffer));
         this.sender = new Sender(3);
     }
 
     public void send(String string) throws UnknownHostException {
-        InetAddress address = InetAddress.getByName(ipAdd);
-        this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, portNb));
+        InetAddress address = InetAddress.getByName(IP_ADDRESS);
+        this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, PORT_NUMBER));
     }
 
     public static synchronized NetService getInstance() {

@@ -1,4 +1,4 @@
-package arreat.api;
+package arreat.impl;
 
 import java.sql.*;
 import java.util.ArrayList;

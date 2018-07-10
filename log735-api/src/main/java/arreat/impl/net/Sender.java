@@ -1,4 +1,4 @@
-package arreat.api.net;
+package arreat.impl.net;
 
 import com.google.common.util.concurrent.MoreExecutors;
 

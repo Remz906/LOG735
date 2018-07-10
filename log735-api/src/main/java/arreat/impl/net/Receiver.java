@@ -1,4 +1,4 @@
-package arreat.api.net;
+package arreat.impl.net;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
