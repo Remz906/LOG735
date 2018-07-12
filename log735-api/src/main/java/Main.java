@@ -19,8 +19,8 @@ public class Main {
                         DB = new DataBase();
                         DB.initDB();
                         DB.newMessage("discussion1", 1, "G4", "hello world");
-                        DB.newMessage("lapluie", 2, "pseudo2", "hello world2");
-                        DB.readMessages();
+                        DB.newMessage("discussion1", 1, "G4", "hello world");
+                        //DB.readMessages();
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
