@@ -1,8 +1,9 @@
+import arreat.impl.Client;
 import arreat.impl.DataBase;
+import arreat.impl.Message;
 import arreat.impl.core.NetService;
 
 import java.net.UnknownHostException;
-import java.sql.SQLException;
 import java.util.Scanner;
 
 /**
@@ -15,16 +16,15 @@ public class Main {
             switch (args[0]) {
                 case "client":
                     DataBase DB;
-                    try {
-                        DB = new DataBase();
-                        DB.initDB();
-                        DB.newMessage("discussion1", 1, "G4", "hello world");
-                        DB.newMessage("discussion1", 1, "G4", "hello world");
-                        //DB.readMessages();
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    break;
+                    DB = new DataBase();
+
+                    DB.initDBhistoricDiscussion();
+                    DB.initDBClientIP();
+                    DB.newMessage(new Message("discussion1", 1, "G4", "hello world"));
+                    DB.newMessage(new Message("discussion1", 1, "G4", "hello world"));
+                    System.out.println(DB.readMessages().size());
+                    DB.newClient(new Client("197.565.454.454",49444, "G4" ));
+                    DB.readClients();
                 case "serveur":
 
                     break;
