@@ -45,7 +45,7 @@ public class Main {
                 loop = !"exit".equalsIgnoreCase(value);
 
                 if (loop) {
-                    net.send(value);
+                    net.send("127.0.0.0",8080,value);
                 }
             }
         }
