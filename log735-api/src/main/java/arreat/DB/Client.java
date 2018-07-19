@@ -1,4 +1,4 @@
-package arreat.impl;
+package arreat.DB;
 
 import java.util.Objects;
 
@@ -6,11 +6,19 @@ public class Client{
     private String ip;
     private int port;
     private String pseudo;
+    private String pwd;
 
     public Client(String ip, int port, String pseudo) {
         this.ip = ip;
         this.port = port;
         this.pseudo = pseudo;
+    }
+
+    public Client(String ip, int port, String pseudo, String pdw) {
+        this.ip = ip;
+        this.port = port;
+        this.pseudo = pseudo;
+        this.pwd = pwd;
     }
 
     public String getIp() {
@@ -24,6 +32,8 @@ public class Client{
     public String getPseudo() {
         return pseudo;
     }
+
+    public String getPwd(){return pwd;}
 
     @Override
     public boolean equals(Object o) {

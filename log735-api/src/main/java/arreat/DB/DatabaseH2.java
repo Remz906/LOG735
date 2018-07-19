@@ -1,39 +1,36 @@
-package arreat.impl;
+package arreat.DB;
 
-import java.sql.*;
+import arreat.impl.Message;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 
-public class DatabaseH2 {
-    private Connection connection;
-    private Statement statement;
-    private String url = "jdbc:h2:~/test";
-    private String userID = "test";
-    private String password = "test";
-    public DatabaseH2() {
-        try {
-            connection = DriverManager.getConnection(url,userID, password);
-            statement = connection.createStatement();
-        } catch (SQLException e) {
-            System.out.println("The connection with de database can't be established");
-            e.printStackTrace();
-        }
+public class DatabaseH2 extends DatabaseSQL{
+    static final private String url = "jdbc:h2:~/test";
+    static final private String userID = "test";
+    static final private String password = "test";
+    static final private String driver = "org.h2.Driver";
 
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
+    private DatabaseH2(){
+        super(url,userID,password,driver);
     }
 
+    @Override
+    protected void initDB(){
+
+    }
 
     /**
      * ClientIP
      */
     // Initialisation of clientIp database
-    public void initDBClientIP(){
+    private void initDBClientIP() throws SQLException {
+        Statement statement= null;
         // Creation of historicDiscussion table
         try{
+            statement = connection.createStatement();
             statement.execute("" +
                     "CREATE TABLE clientIP (" +
                     "keyClient INTEGER PRIMARY KEY, " +
@@ -47,6 +44,7 @@ public class DatabaseH2 {
             if(e.getErrorCode()==42101){
                 System.out.println("the table clientIP already exist, we will drop it and create a new one");
                 try {
+                    statement = connection.createStatement();
                     statement.execute("DROP TABLE clientIP");
                 } catch (SQLException e1) {
                     e1.printStackTrace();
@@ -56,26 +54,41 @@ public class DatabaseH2 {
             else
                 e.printStackTrace();
         }
+
+        if (statement != null)
+            statement.closeOnCompletion();
     }
 
     // Add new client to the database
     public void newClient(Client client){
+
+        Statement statement = null;
         try {
+            statement = connection.createStatement();
             int key = keyNumber("keyClient", "clientIP");
-            statement.execute("INSERT INTO clientIP  VALUES("+key+ ", '"+client.getPseudo()+"', '"+client.getIp()+"',"+client.getPort()+")");
+            statement.execute("INSERT INTO clientIP  VALUES(" + key + ", '" + client.getPseudo() + "', '" + client.getIp() + "'," + client.getPort() + ")");
         } catch (SQLException e) {
             System.out.println("ERROR newClient");
+            e.printStackTrace();
+        }
+
+        try {
+            if (statement != null)
+                statement.closeOnCompletion();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     // Create Client object with the DB
-    public ArrayList<Client> readClients(){
+    public ArrayList<Client> readClients() {
+        Statement statement = null;
         ArrayList<Client> clients = new ArrayList();
         Client client;
         try {
+            statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("SELECT * FROM clientIP ");
-            while(rs.next()) {
+            while (rs.next()) {
                 client = new Client(rs.getString("IP"), rs.getInt("port"), rs.getString("pseudo"));
                 clients.add(client);
             }
@@ -83,6 +96,15 @@ public class DatabaseH2 {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        try {
+            if (statement != null)
+                statement.closeOnCompletion();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return clients;
     }
 
@@ -92,9 +114,11 @@ public class DatabaseH2 {
      */
 
     // Initialisation of the table historicDiscussion
-    public void initDBhistoricDiscussion(){
+    public void initDBhistoricDiscussion() throws SQLException {
+        Statement statement= null;
         // Creation of historicDiscussion table
         try{
+            statement = connection.createStatement();
             statement.execute("" +
                     "CREATE TABLE historicDiscussion (" +
                     "keyDiscussion INTEGER PRIMARY KEY, " +
@@ -118,26 +142,34 @@ public class DatabaseH2 {
             else
                 e.printStackTrace();
         }
+
+        if (statement != null)
+            statement.closeOnCompletion();
     }
 
     // Add new message to the database
-    public void newMessage(Message message){
+    public void newMessage(Message message) throws SQLException {
+        Statement statement= null;
         try {
+            statement = connection.createStatement();
             int key = keyNumber("keyDiscussion", "historicDiscussion");
             statement.execute("INSERT INTO HISTORICDISCUSSION  VALUES("+key+ ", '"+message.getDiscussionName()+"',"+message.getTimestamp()+", '"+message.getPseudo()+"', '"+message.getMessage()+"')");
         } catch (SQLException e) {
             System.out.println("ERROR newMessage");
             e.printStackTrace();
         }
+
+        if (statement != null)
+            statement.closeOnCompletion();
     }
 
-
-
     // Create Message object with the DB
-    public ArrayList<Message> readMessages(){
+    public ArrayList<Message> readMessages() throws SQLException {
+        Statement statement= null;
         ArrayList<Message> messages = new ArrayList();
         Message message;
         try {
+            statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("SELECT * FROM HISTORICDISCUSSION ");
             while(rs.next()) {
                 message = new Message(rs.getString("DISCUSSIONNAME"), rs.getInt("TIMESTAMP"), rs.getString("SENDERPSEUDO"), rs.getString("MESSAGE"));
@@ -147,36 +179,13 @@ public class DatabaseH2 {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        if (statement != null)
+            statement.closeOnCompletion();
         return messages;
     }
-
 
     /**
      * General tools
      */
-
-    //return the new keynumber to add for the new row
-    public int keyNumber(String keyName, String tableName){
-        int newKeyNumber = -1;
-        ResultSet rs;
-        try {
-            // if we have no row we return the first keyNumber 1
-            rs = statement.executeQuery("SELECT COUNT(*) FROM " + tableName );
-            rs.next();
-            if(rs.getInt("COUNT(*)")==0)
-                newKeyNumber = 1;
-
-            // if one or more row exist, we return de biggest key + 1
-            else{
-                rs = statement.executeQuery("SELECT * FROM " + tableName +" ORDER BY " + keyName+ " DESC");
-                rs.next();
-                newKeyNumber = rs.getInt(keyName) + 1;
-            }
-        } catch (SQLException e) {
-            System.out.println("ERROR keyNumber");
-            e.printStackTrace();
-        }
-        return newKeyNumber;
-    }
 
 }

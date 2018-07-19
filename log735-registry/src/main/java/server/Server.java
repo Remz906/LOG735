@@ -1,6 +1,6 @@
 package server;
 
-import arreat.impl.DataBase;
+import arreat.DB.DatabaseMySQL;
 import arreat.impl.core.NetService;
 
 import java.net.UnknownHostException;
@@ -9,7 +9,7 @@ public class Server implements Runnable{
 
     private boolean shutdownRequested = false;
     private int portNb = 8080;
-    private DataBase db;
+    private DatabaseMySQL db;
 
     public Server(){}
 

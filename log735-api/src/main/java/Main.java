@@ -1,5 +1,5 @@
-import arreat.impl.Client;
-import arreat.impl.DatabaseH2;
+import arreat.DB.Client;
+import arreat.DB.DatabaseSQL;
 import arreat.impl.Message;
 import arreat.impl.core.NetService;
 
@@ -15,8 +15,8 @@ public class Main {
         if (args.length > 0) {
             switch (args[0]) {
                 case "client":
-                    DatabaseH2 DB;
-                    DB = new DatabaseH2();
+                    DatabaseSQL DB;
+                    DB = new DatabaseSQL();
 
                     DB.initDBhistoricDiscussion();
                     DB.initDBClientIP();
