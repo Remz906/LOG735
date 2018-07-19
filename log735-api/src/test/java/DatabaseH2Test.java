@@ -1,12 +1,12 @@
 import arreat.impl.Client;
-import arreat.impl.DataBase;
+import arreat.impl.DatabaseH2;
 import arreat.impl.Message;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DataBaseTest {
-    private DataBase db = new DataBase();
+public class DatabaseH2Test {
+    private DatabaseH2 db = new DatabaseH2();
 
 
     @Test

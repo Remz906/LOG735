@@ -33,8 +33,12 @@ public final class NetService {
     }
 
     public void send(String ipAdd, int portNb, String string) throws UnknownHostException {
-        InetAddress address = InetAddress.getByName(IP_ADDRESS);
+        InetAddress address = InetAddress.getByName(ipAdd);
         this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, PORT_NUMBER));
+    }
+
+    public String receive() throws UnknownHostException {
+        return null;
     }
 
     public static synchronized NetService getInstance() {

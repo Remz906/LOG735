@@ -3,13 +3,13 @@ package arreat.impl;
 import java.sql.*;
 import java.util.ArrayList;
 
-public class DataBase {
+public class DatabaseH2 {
     private Connection connection;
     private Statement statement;
     private String url = "jdbc:h2:~/test";
     private String userID = "test";
     private String password = "test";
-    public DataBase() {
+    public DatabaseH2() {
         try {
             connection = DriverManager.getConnection(url,userID, password);
             statement = connection.createStatement();
