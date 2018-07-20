@@ -13,7 +13,7 @@ public class DatabaseH2 extends DatabaseSQL{
     static final private String password = "test";
     static final private String driver = "org.h2.Driver";
 
-    private DatabaseH2(){
+    public DatabaseH2(){
         super(url,userID,password,driver);
     }
 
@@ -26,7 +26,7 @@ public class DatabaseH2 extends DatabaseSQL{
      * ClientIP
      */
     // Initialisation of clientIp database
-    private void initDBClientIP() throws SQLException {
+    public void initDBClientIP() throws SQLException {
         Statement statement= null;
         // Creation of historicDiscussion table
         try{

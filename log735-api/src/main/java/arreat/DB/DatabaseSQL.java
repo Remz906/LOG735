@@ -86,6 +86,7 @@ public class DatabaseSQL {
     }
 
 
+
     private void initCltTable() {
         try {
             sendQuery("CREATE TABLE client (" +
@@ -151,7 +152,7 @@ public class DatabaseSQL {
         ArrayList<Client> clients = new ArrayList();
         Client client;
         try {
-            ResultSet rs = sendQuery("SELECT * FROM clientIP ");
+            ResultSet rs = sendQuery("SELECT * FROM client ");
             while (rs.next()) {
                 client = new Client(rs.getString("IP"), rs.getInt("port"), rs.getString("pseudo"), rs.getString("pwd"));
                 clients.add(client);
@@ -166,6 +167,8 @@ public class DatabaseSQL {
     public void removeClt(){
 
     }
+
+
 
 
 

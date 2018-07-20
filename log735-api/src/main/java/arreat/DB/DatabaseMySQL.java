@@ -22,6 +22,46 @@ public class DatabaseMySQL extends DatabaseSQL{
     }
 
 
+    private void initMasterNodeTable(){
+        try {
+            sendQuery("CREATE TABLE masterNode (" +
+                    "name VARCHAR(20) NOT NULL, " +
+                    "masterPseudo VARCHAR(20) NOT NULL)");
+            System.out.println("masterNode table created");
+        } catch (SQLException e) {
+            System.out.println("code: "+e.getErrorCode());
+            // the table already exist
+            if(e.getErrorCode()==42101){
+                System.out.println("the table already exist");
+            }else
+                e.printStackTrace();
+        }
+    }
+
+
+    // Add new client to the database
+    public void addNode(Node node){
+        try {
+            Statement statement = connection.createStatement();
+            statement.execute("INSERT INTO node  VALUES("+ node.getName() +","+node.getMasterPseudo()+")");
+            statement.closeOnCompletion();
+        } catch (SQLException e) {
+            System.out.println("ERROR addNode");
+            e.printStackTrace();
+        }
+    }
+
+
+    public void removeNode(Node node){
+        try {
+            Statement statement = connection.createStatement();
+            statement.execute("DELETE FROM masterNode WHERE name ="+ node.getName() +")");
+            statement.closeOnCompletion();
+        } catch (SQLException e) {
+            System.out.println("ERROR rm Node");
+            e.printStackTrace();
+        }
+    }
 
 
 
