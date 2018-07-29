@@ -163,7 +163,7 @@ public class DatabaseH2 extends DatabaseSQL{
             statement.closeOnCompletion();
     }
 
-    // Create Message object with the DB
+    // Create UDPMessage object with the DB
     public ArrayList<Message> readMessages() throws SQLException {
         Statement statement= null;
         ArrayList<Message> messages = new ArrayList();

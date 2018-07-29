@@ -21,7 +21,7 @@ public class NetPacket implements Packet {
     @Override
     public void setMessage(Message message) {
         if (message == null || message.getBody() == null || message.getTarget() == null) {
-            throw new IllegalArgumentException("Cannot set Message, Invalid Message received.");
+            throw new IllegalArgumentException("Cannot set UDPMessage, Invalid UDPMessage received.");
         }
         this.message = message;
         this.messageImplementationName = message.getClass().getName();
