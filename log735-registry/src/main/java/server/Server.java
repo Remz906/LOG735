@@ -26,6 +26,11 @@ public class Server implements Runnable{
     private final int nbOfServers;
     private int nbOfAnswersServers;
 
+    private final String USER_HEATHER = "USER";
+    private final String USER_UPDATE = "UPDATE";
+    private int LC = 0;
+
+
 
     private boolean shutdownRequested = false;
     private int portNb = 8080;
@@ -146,6 +151,13 @@ public class Server implements Runnable{
                                 }
                         }
                         break;
+                    case USER_HEATHER:
+                        switch (msg[1]){
+                            case USER_UPDATE:
+
+                                break;
+
+                        }
 
 
                     default:
