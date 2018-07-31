@@ -132,6 +132,7 @@ public class ChatTabs extends TabPane {
         private void sendMessage() {
             String message = this.input.getText().trim();
             if (!"".equals(message)) {
+                
                 // TODO: Implement send.
                 this.addMessage("me", message);
                 this.input.setText("");

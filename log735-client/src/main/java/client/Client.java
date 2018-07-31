@@ -18,10 +18,7 @@ public class Client extends Application {
         // Service Initialization.
         NetService netService = NetService.getInstance();
 
-        netService.setIpAddress("127.0.0.1");
-        netService.setPortNumber(1337);
-
-        netService.init();
+        netService.configure();
 
         // Start the service.
         new MessageReceiver().start();

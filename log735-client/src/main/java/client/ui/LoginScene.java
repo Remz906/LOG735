@@ -24,6 +24,7 @@ public class LoginScene extends Scene {
         private static final Label PASSWORD_LABEL;
 
         private final Button loginButton;
+        private final Button registerButton;
         private final PasswordField password;
         private final TextField username;
 
@@ -31,12 +32,19 @@ public class LoginScene extends Scene {
             //Setting the padding
             this.setPadding(new Insets(10, 10, 10, 10));
 
-            this.loginButton = new Button("Login");
             this.username = new TextField();
             this.password = new PasswordField();
 
+            this.loginButton = new Button("Login");
             this.loginButton.setOnMouseClicked(event -> {
                 if (login()) {
+                    switchScene();
+                }
+            });
+
+            this.registerButton = new Button("Register");
+            this.registerButton.setOnMouseClicked(event -> {
+                if (register()) {
                     switchScene();
                 }
             });
@@ -60,6 +68,11 @@ public class LoginScene extends Scene {
 //            } catch (UnknownHostException e) {
 //                // DO SOMETHING !?
 //            }
+            return true;
+        }
+
+        private boolean register() {
+            // TODO: Implement.
             return true;
         }
 
