@@ -18,31 +18,57 @@ public final class NetService {
 
     private static volatile NetService instance;
 
-    private final ExecutorService receiverService;
-    private final Sender sender;
-    private final byte[] buffer;
-    private final Receiver receiver;
-    private static final int PORT_NUMBER = 1337;
-    private static final String IP_ADDRESS = "127.0.0.1";
+    private  ExecutorService receiverService;
+    private  Sender sender;
+    private  byte[] buffer;
+    private  Receiver receiver;
+
+
+    private  int portNumber = 9080;
+    private  String ipAddress = "127.0.0.1";
 
     private NetService() throws SocketException {
+    }
+
+
+
+    public void init () throws SocketException {
         this.buffer = new byte[1024];
         this.receiverService = MoreExecutors.getExitingExecutorService(
                 (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
 
-        this.receiver = new Receiver(new DatagramSocket(PORT_NUMBER), this.buffer);
+        this.receiver = new Receiver(new DatagramSocket(portNumber), this.buffer);
         this.receiverService.submit(receiver);
         this.sender = new Sender(3);
     }
 
     public void send(String ipAdd, int portNb, String string) throws UnknownHostException {
         InetAddress address = InetAddress.getByName(ipAdd);
-        this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, PORT_NUMBER));
+        this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, portNumber));
     }
 
     public UDPMessage receive() {
         return this.receiver.getUDPMessages().pop();
     }
+
+    public int getPortNumber() {
+        return portNumber;
+    }
+
+    public NetService setPortNumber(int portNumber) {
+        this.portNumber = portNumber;
+        return this;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public NetService setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+        return this;
+    }
+
 
     public static synchronized NetService getInstance() {
         return instance;

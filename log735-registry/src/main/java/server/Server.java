@@ -1,14 +1,15 @@
 package server;
 
+import arreat.DB.Client;
 import arreat.DB.DatabaseMySQL;
+import arreat.DB.Node;
 import arreat.impl.core.NetService;
 import arreat.impl.net.UDPMessage;
-import sun.nio.ch.Net;
+import com.google.gson.Gson;
 
+import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 public class Server implements Runnable{
 
@@ -19,17 +20,29 @@ public class Server implements Runnable{
     private final String HB_UNSTABLE = "UNSTABLE";
 
     private final int MASTER_ELECTION_TIMER = 500000;
-    private final String INFO_HEATHER = "INFO";
+    private final String MASTER_ELECTION = "ME";
+    private final String MASTER_FIND_MASTER = "FIND_MASTER";
     private final String INFO_IS_MASTER = "isMaster";
-    private final String INFO_IS_MASTER_RESPONSE = "MR";
+    private final String INFO_FM_RESPONSE = "FMR";
     private long beginTimer;
-    private final int nbOfServers;
-    private int nbOfAnswersServers;
 
     private final String USER_HEATHER = "USER";
-    private final String USER_UPDATE = "UPDATE";
-    private int LC = 0;
 
+    private final String USER_GET_BY_PSEUDO = "GET_BY_PSEUDO";
+    private final String USER_GET_RESPONSE = "GR";
+
+    private final String COMMAND_UPDATE = "UPDATE";
+    private final String COMMAND_ADD = "ADD";
+    private final String COMMAND_GOSSIP = "GOSSIP";
+    private final String COMMAND_DELETE = "DELETE";
+
+
+
+    private final String USER_FRONT_HEATHER = "UF";
+    private final String UF_UPDATE_MASTER = "UM";
+
+
+    private final String NODE_HEATHER = "NODE";
 
 
     private boolean shutdownRequested = false;
@@ -40,28 +53,19 @@ public class Server implements Runnable{
     private String masterIp;
     private int masterPort;
     private Thread hbThread;
-    private Map<String, Integer> ipAddOfServers;
+    private List<Pair<String, Integer>> ipAddOfServers;
+
+    private boolean serverFound;
 
 
-
-
-//
-//    public Server(){}
-//
-//    public Server(int portNb){
-//        this.portNb = portNb;
-//    }
-//
-//    public Server(int portNb, String ipAdd){
-//        this.ipAdd = ipAdd;
-//        this.portNb = portNb;
-//    }
-
-    public Server(int portNb, String ipAdd, Map<String, Integer> ipOfServers){
+    public Server(int portNb, String ipAdd, List<Pair<String, Integer>> ipOfServers) throws SocketException {
         this.ipAdd = ipAdd;
         this.portNb = portNb;
         this.ipAddOfServers = ipOfServers;
-        this.nbOfServers = ipOfServers.size();
+        NetService.getInstance().setIpAddress(ipAdd);
+        NetService.getInstance().setPortNumber(portNb);
+        NetService.getInstance().init();
+        init();
     }
 
     private void init(){
@@ -73,9 +77,24 @@ public class Server implements Runnable{
 
     private void electMaster(){
         try {
-            sendCommandToAllServers(INFO_HEATHER+":"+INFO_IS_MASTER);
+            masterIp = ipAdd;
+            sendCommandToAllServers(MASTER_ELECTION +":"+MASTER_FIND_MASTER);
         } catch (UnknownHostException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void setMaster(String ip, int portNb){
+        this.ipAdd = ip;
+        this.portNb = portNb;
+        boolean preIsMaster = isMaster;
+        isMaster = (ipAdd == masterIp);
+        if (!preIsMaster && isMaster){
+            try {
+                sendCommandToAllClients(USER_FRONT_HEATHER +":" + UF_UPDATE_MASTER+":"+ipAdd+":"+String.valueOf(portNb));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -84,8 +103,15 @@ public class Server implements Runnable{
     }
 
     private void sendCommandToAllServers(String command) throws UnknownHostException {
-        for (Map.Entry<String, Integer> server : ipAddOfServers.entrySet()){
-            NetService.getInstance().send(server.getKey(), server.getValue(), command);
+        for (Pair<String, Integer> server : ipAddOfServers){
+            NetService.getInstance().send(server.getL(), server.getR(), command);
+        }
+    }
+
+    private void sendCommandToAllClients(String command) throws UnknownHostException {
+        List<Client> users = this.db.getAllClients();
+        for (Client clt : users){
+            NetService.getInstance().send(clt.getIp(),clt.getPort(), command);
         }
     }
 
@@ -93,25 +119,20 @@ public class Server implements Runnable{
         this.shutdownRequested = true;
     }
 
-    public void initHeartBeatThread(){
-        this.hbThread = new Thread(new Runnable() {
-            public void run() {
-                while(!shutdownRequested){
-                    try {
-                        Thread.sleep(HB_TIMER);
-                        if (!isMaster){
-
-                        }else if (masterIp != null){
-                            NetService.getInstance().send(masterIp, masterPort, HB_MSG_HEATHER+":"+HB_OK);
-                        }
-
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (UnknownHostException e) {
-                        e.printStackTrace();
+    private void initHeartBeatThread(){
+        this.hbThread = new Thread(() -> {
+            while(!shutdownRequested){
+                try {
+                    Thread.sleep(HB_TIMER);
+                    if (masterIp != null && !isMaster){
+                        NetService.getInstance().send(masterIp, masterPort, HB_MSG_HEATHER+":"+HB_OK);
                     }
-
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
                 }
+
             }
         });
     }
@@ -121,12 +142,14 @@ public class Server implements Runnable{
     }
 
 
+
     @Override
     public void run() {
-
         try {
+            this.hbThread.start();
             while (!this.shutdownRequested){
                 UDPMessage udpMessage = NetService.getInstance().receive();
+                Gson gson = new Gson();
                 String[] msg = udpMessage.getMsg().split(":");
                 switch(msg[0]){
                     case HB_MSG_HEATHER:
@@ -136,29 +159,74 @@ public class Server implements Runnable{
                             beginTimer = System.currentTimeMillis();
                         }
                         break;
-                    case INFO_HEATHER:
+                    case MASTER_ELECTION:
                         switch (msg[1]){
-                            case INFO_IS_MASTER:
-                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(),INFO_HEATHER+":"+INFO_IS_MASTER_RESPONSE+":"+(isMaster?this.ipAdd:"False"));
-                                break;
-                            case INFO_IS_MASTER_RESPONSE:
-                                if (msg[2] != "True"){
-                                    masterIp = msg[2];
-                                    beginTimer = System.currentTimeMillis();
-                                }else{
-
-                                    //just let the time pass so it auto elect itself;
+                            case MASTER_FIND_MASTER:
+                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(masterIp, masterPort))
+                                {
+                                    masterIp = udpMessage.getIp();
+                                    masterPort = udpMessage.getPort();
+                                    isMaster = false;
                                 }
+                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION +":"+ INFO_FM_RESPONSE);
+                                break;
+                            case INFO_FM_RESPONSE:
+                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(masterIp, masterPort))
+                                {
+                                    masterIp = udpMessage.getIp();
+                                    masterPort = udpMessage.getPort();
+                                    isMaster = false;
+                                }else{
+                                    masterIp = this.ipAdd;
+                                    masterPort = this.portNb;
+                                    isMaster = true;
+                                }
+
+                                break;
                         }
                         break;
                     case USER_HEATHER:
+
+                        Client clt;
                         switch (msg[1]){
-                            case USER_UPDATE:
-
+                            case COMMAND_ADD:
+                                clt = gson.fromJson(msg[2], Client.class);
+                                this.db.newClient(clt);
                                 break;
-
+                            case COMMAND_UPDATE:
+                                clt = gson.fromJson(msg[2], Client.class);
+                                this.db.updateClt(clt);
+                                break;
+                            case COMMAND_DELETE:
+                                clt = gson.fromJson(msg[2], Client.class);
+                                this.db.deleteClt(clt);
+                                break;
+                            case USER_GET_BY_PSEUDO:
+                                clt = this.db.getClientByPseudo(msg[2]);
+                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(clt));
+                                break;
                         }
 
+                    case NODE_HEATHER:
+                        Node node;
+                        switch (msg[1]){
+//                            case COMMAND_ADD:
+//                                node = gson.fromJson(msg[2], Node.class);
+//                                this.db.newClient(clt);
+//                                break;
+//                            case COMMAND_UPDATE:
+//                                clt = gson.fromJson(msg[2], Client.class);
+//                                this.db.updateClt(clt);
+//                                break;
+//                            case COMMAND_DELETE:
+//                                clt = gson.fromJson(msg[2], Client.class);
+//                                this.db.deleteClt(clt);
+//                                break;
+//                            case USER_GET_BY_PSEUDO:
+//                                clt = this.db.getClientByPseudo(msg[2]);
+//                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(clt));
+//                                break;
+                        }
 
                     default:
                         System.out.println("no msg received");
@@ -166,6 +234,10 @@ public class Server implements Runnable{
                 }
 
 
+                //propagate throughout the network
+                if (isMaster){
+                    sendCommandToAllServers(udpMessage.getMsg());
+                }
 
                 if (System.currentTimeMillis() - beginTimer >= MASTER_ELECTION_TIMER){
                     electMaster();

@@ -22,92 +22,6 @@ public class DatabaseH2 extends DatabaseSQL{
 
     }
 
-    /**
-     * ClientIP
-     */
-    // Initialisation of clientIp database
-    public void initDBClientIP() throws SQLException {
-        Statement statement= null;
-        // Creation of historicDiscussion table
-        try{
-            statement = connection.createStatement();
-            statement.execute("" +
-                    "CREATE TABLE clientIP (" +
-                    "keyClient INTEGER PRIMARY KEY, " +
-                    "Pseudo VARCHAR(20) NOT NULL, " +
-                    "IP VARCHAR(20) NOT NULL," +
-                    "port INTEGER NOT NULL)");
-            System.out.println("clientIP table create");
-        } catch (SQLException e) {
-            System.out.println("code: "+e.getErrorCode());
-            // the table already exist
-            if(e.getErrorCode()==42101){
-                System.out.println("the table clientIP already exist, we will drop it and create a new one");
-                try {
-                    statement = connection.createStatement();
-                    statement.execute("DROP TABLE clientIP");
-                } catch (SQLException e1) {
-                    e1.printStackTrace();
-                }
-                initDBClientIP();
-            }
-            else
-                e.printStackTrace();
-        }
-
-        if (statement != null)
-            statement.closeOnCompletion();
-    }
-
-    // Add new client to the database
-    public void newClient(Client client){
-
-        Statement statement = null;
-        try {
-            statement = connection.createStatement();
-            int key = keyNumber("keyClient", "clientIP");
-            statement.execute("INSERT INTO clientIP  VALUES(" + key + ", '" + client.getPseudo() + "', '" + client.getIp() + "'," + client.getPort() + ")");
-        } catch (SQLException e) {
-            System.out.println("ERROR newClient");
-            e.printStackTrace();
-        }
-
-        try {
-            if (statement != null)
-                statement.closeOnCompletion();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Create Client object with the DB
-    public ArrayList<Client> readClients() {
-        Statement statement = null;
-        ArrayList<Client> clients = new ArrayList();
-        Client client;
-        try {
-            statement = connection.createStatement();
-            ResultSet rs = statement.executeQuery("SELECT * FROM clientIP ");
-            while (rs.next()) {
-                client = new Client(rs.getString("IP"), rs.getInt("port"), rs.getString("pseudo"));
-                clients.add(client);
-            }
-            rs.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            if (statement != null)
-                statement.closeOnCompletion();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return clients;
-    }
-
 
     /**
      * historicDiscussion
@@ -152,8 +66,7 @@ public class DatabaseH2 extends DatabaseSQL{
         Statement statement= null;
         try {
             statement = connection.createStatement();
-            int key = keyNumber("keyDiscussion", "historicDiscussion");
-            statement.execute("INSERT INTO HISTORICDISCUSSION  VALUES("+key+ ", '"+message.getDiscussionName()+"',"+message.getTimestamp()+", '"+message.getPseudo()+"', '"+message.getMessage()+"')");
+            statement.execute("INSERT INTO HISTORICDISCUSSION  VALUES(" + message.getDiscussionName()+"',"+message.getTimestamp()+", '"+message.getPseudo()+"', '"+message.getMessage()+ ")");
         } catch (SQLException e) {
             System.out.println("ERROR newMessage");
             e.printStackTrace();

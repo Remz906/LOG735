@@ -2,8 +2,11 @@ package arreat.DB;
 
 import arreat.impl.Message;
 
+import javax.swing.plaf.nimbus.State;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 
 public class DatabaseSQL {
@@ -87,20 +90,26 @@ public class DatabaseSQL {
 
 
 
+    /********************* Client ************************/
+
     private void initCltTable() {
+        String sql = "CREATE TABLE Client (" +
+                "id INTEGER NOT NULL AUTO_INCREMENT, " +
+                "pseudo VARCHAR(255) NOT NULL, " +
+                "ip VARCHAR(255) NOT NULL," +
+                "port INTEGER NOT NULL," +
+                "pwd VARCHAR(20)m " +
+                "PRIMARY KEY(id))";
         try {
-            sendQuery("CREATE TABLE client (" +
-                    "keyClient INTEGER PRIMARY KEY, " +
-                    "Pseudo VARCHAR(20) NOT NULL, " +
-                    "IP VARCHAR(20) NOT NULL," +
-                    "port INTEGER NOT NULL," +
-                    "pwd VARCHAR(20))");
-            System.out.println("client table create");
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.executeUpdate();
+            ps.closeOnCompletion();
+            System.out.println("Client table create");
         } catch (SQLException e) {
             System.out.println("code: "+e.getErrorCode());
             // the table already exist
             if(e.getErrorCode()==42101){
-                System.out.println("the table clientIP already exist");
+                System.out.println("the table Client already exist");
             }else
                 e.printStackTrace();
         }
@@ -109,10 +118,10 @@ public class DatabaseSQL {
 
     // Add new client to the database
     public void newClient(Client client){
+        String sql = "INSERT INTO Client VALUES(" + client.getPseudo()+", "+client.getIp()+", "+client.getPort()+", "+client.getPwd()+")";
         try {
-            Statement statement = connection.createStatement();
-            int key = keyNumber("keyClient", "client");
-            statement.execute("INSERT INTO clientIP  VALUES("+key+ ", '"+client.getPseudo()+"', '"+client.getIp()+"',"+client.getPort()+"','"+client.getPwd()+")");
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.executeUpdate();
             statement.closeOnCompletion();
         } catch (SQLException e) {
             System.out.println("ERROR newClient");
@@ -120,56 +129,76 @@ public class DatabaseSQL {
         }
     }
 
-    //return the new keynumber to add for the new row
-    int keyNumber(String keyName, String tableName) throws SQLException {
-        int newKeyNumber = -1;
-        ResultSet rs;
-        Statement statement= null;
+    public List<Client> getAllClients(){
+        String sql = "SELECT * FROM Client";
+        List<Client> list = new LinkedList<>();
         try {
-            statement = connection.createStatement();
-            // if we have no row we return the first keyNumber 1
-            rs = statement.executeQuery("SELECT COUNT(*) FROM " + tableName );
-            rs.next();
-            if(rs.getInt("COUNT(*)")==0)
-                newKeyNumber = 1;
+            PreparedStatement st = connection.prepareStatement(sql);
+            ResultSet rs = st.executeQuery();
+            while(rs.next()){
+                list.add(getClientFromRs(rs));
 
-                // if one or more row exist, we return de biggest key + 1
-            else{
-                rs = statement.executeQuery("SELECT * FROM " + tableName +" ORDER BY " + keyName+ " DESC");
-                rs.next();
-                newKeyNumber = rs.getInt(keyName) + 1;
             }
         } catch (SQLException e) {
-            System.out.println("ERROR keyNumber");
             e.printStackTrace();
         }
-        if (statement != null)
+        return list;
+    }
+
+    public Client getClientByPseudo(String pseudo){
+        String sql = "SELECT FROM Client WHERE pseudo =" + pseudo;
+        Client clt = null;
+        try{
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet rs = statement.executeQuery();
+            clt = getClientFromRs(rs);
+
             statement.closeOnCompletion();
-        return newKeyNumber;
-    }
 
-    public ArrayList<Client> readClients(){
-        ArrayList<Client> clients = new ArrayList();
-        Client client;
-        try {
-            ResultSet rs = sendQuery("SELECT * FROM client ");
-            while (rs.next()) {
-                client = new Client(rs.getString("IP"), rs.getInt("port"), rs.getString("pseudo"), rs.getString("pwd"));
-                clients.add(client);
-            }
-            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return clients;
+
+        return clt;
     }
 
-    public void removeClt(){
+    public void deleteClt(Client client){
+        String sql = "DELETE FROM Client WHERE id = ?";
+        try (Connection conn = this.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            // set the corresponding param
+            ps.setInt(1, client.getId());
+            // execute the delete statement
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
 
     }
 
+    public void updateClt(Client client){
+        String sql = "";
+        Client clt = getClientByPseudo(client.getPseudo());
 
 
+    }
+
+    /********************* Node ************************/
+
+
+
+
+    /********************* RS mappers ************************/
+
+    private Client getClientFromRs(ResultSet rs) throws SQLException {
+        return  new Client(rs.getInt("id"), rs.getString("ip"),
+                rs.getInt("port"), rs.getString("pseudo"), rs.getString("pwd"));
+    }
+
+    private Node getNodeFromRs(ResultSet rs) throws  SQLException{
+        return new Node(rs.getInt("id"), rs.getString("name"), rs.getString("masterPseudo"));
+    }
 
 
 }

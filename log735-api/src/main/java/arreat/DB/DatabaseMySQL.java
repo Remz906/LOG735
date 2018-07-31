@@ -42,8 +42,8 @@ public class DatabaseMySQL extends DatabaseSQL{
     // Add new client to the database
     public void addNode(Node node){
         try {
-            Statement statement = connection.createStatement();
-            statement.execute("INSERT INTO node  VALUES("+ node.getName() +","+node.getMasterPseudo()+")");
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO node  VALUES("+ node.getName() +","+node.getMasterPseudo()+")");
+            statement.executeUpdate();
             statement.closeOnCompletion();
         } catch (SQLException e) {
             System.out.println("ERROR addNode");
@@ -54,8 +54,8 @@ public class DatabaseMySQL extends DatabaseSQL{
 
     public void removeNode(Node node){
         try {
-            Statement statement = connection.createStatement();
-            statement.execute("DELETE FROM masterNode WHERE name ="+ node.getName() +")");
+            PreparedStatement statement = connection.prepareStatement("DELETE FROM masterNode WHERE name ="+ node.getName() +")");
+            statement.executeUpdate();
             statement.closeOnCompletion();
         } catch (SQLException e) {
             System.out.println("ERROR rm Node");
