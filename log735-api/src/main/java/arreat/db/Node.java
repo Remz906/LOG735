@@ -5,16 +5,23 @@ import java.io.Serializable;
 public class Node implements Serializable {
 
 
-
     private int id;
     private String name;
     private String masterUser;
+    private String pwd;
 
-    public Node(){};
-    public Node(int id, String name, String masterUser){
+    public Node(int id, String name, String masterUser) {
         this.id = id;
         this.name = name;
         this.masterUser = masterUser;
+    }
+
+    public String getPwd() {
+        return pwd;
+    }
+
+    public void setPwd(String pwd) {
+        this.pwd = pwd;
     }
 
     public String getName() {

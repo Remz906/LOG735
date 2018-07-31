@@ -1,6 +1,7 @@
 package arreat.db;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -35,8 +36,8 @@ public class DatabaseSQL {
     }
 
     protected void initDB() {
-
-
+        initCltTable();
+        initNodeTable();
     }
 
     private Properties getProperties() {
@@ -189,8 +190,22 @@ public class DatabaseSQL {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+    }
 
+    public void updateAllClt(List<Client> clients) {
+        for (Client client: clients){
+            updateClt(client);
+        }
+    }
 
+    public List<Client> getCltsByUsername(List<String> usernames) {
+        List<Client> users = new ArrayList<>();
+        for (String username : usernames) {
+            Client user = getClientByPseudo(username);
+            if (user != null)
+                users.add(user);
+        }
+        return users;
     }
 
     /********************* Node ************************/
@@ -200,6 +215,7 @@ public class DatabaseSQL {
                 "id INTEGER NOT NULL AUTO_INCREMENT, " +
                 "name VARCHAR(255) NOT NULL, " +
                 "masterUser VARCHAR(255) NOT NULL," +
+                "pwd VARCHAR(255)" +
                 "PRIMARY KEY(id))";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
@@ -219,7 +235,7 @@ public class DatabaseSQL {
 
     // Add new client to the database
     public void newNode(Node node){
-        String sql = "INSERT INTO Node VALUES(" + node.getName()+", "+node.getMasterUser()+")";
+        String sql = "INSERT INTO Node VALUES(" + node.getName()+", "+node.getMasterUser()+", "+node.getPwd()+")";
         try {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.executeUpdate();
@@ -279,11 +295,12 @@ public class DatabaseSQL {
 
     public void updateNode(Node newNode) {
         Node node = getNodeByName(newNode.getName());
-        String sql = "UPDATE Client SET masterUser=? WHERE id = ?";
+        String sql = "UPDATE Client SET masterUser=? pwd=? WHERE id = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             // set the corresponding param
             ps.setString(1, node.getMasterUser());
-            ps.setInt(2, node.getId());
+            ps.setString(2, node.getPwd());
+            ps.setInt(3, node.getId());
             // execute the delete statement
             ps.executeUpdate();
 
@@ -291,12 +308,24 @@ public class DatabaseSQL {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+    }
 
-
+    public void updateAllNode(List<Node> nodes){
+        for(Node node:nodes){
+            updateNode(node);
+        }
     }
 
 
-
+    public List<Node> getNodesByUsername(List<String> usernames) {
+        List<Node> nodes = new ArrayList<>();
+        for (String username : usernames) {
+            Node user = getNodeByName(username);
+            if (user != null)
+                nodes.add(user);
+        }
+        return nodes;
+    }
     /********************* RS mappers ************************/
 
     private Client getClientFromRs(ResultSet rs) throws SQLException {
