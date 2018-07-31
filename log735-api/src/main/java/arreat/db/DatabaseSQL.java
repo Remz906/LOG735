@@ -141,10 +141,10 @@ public class DatabaseSQL {
         return list;
     }
 
-    public Client getClientByPseudo(String pseudo){
+    public Client getClientByPseudo(String pseudo) {
         String sql = "SELECT FROM Client WHERE pseudo =" + pseudo;
         Client clt = null;
-        try{
+        try {
             PreparedStatement statement = connection.prepareStatement(sql);
             ResultSet rs = statement.executeQuery();
             clt = getClientFromRs(rs);
@@ -158,12 +158,116 @@ public class DatabaseSQL {
         return clt;
     }
 
-    public void deleteClt(Client client){
+    public void deleteClt(Client client) {
         String sql = "DELETE FROM Client WHERE id = ?";
-        try (Connection conn = this.connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                // set the corresponding param
+                ps.setInt(1, client.getId());
+                // execute the delete statement
+                ps.executeUpdate();
+
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+    }
+
+    public void updateClt(Client client) {
+        Client clt = getClientByPseudo(client.getPseudo());
+        String sql = "UPDATE Client SET ip=?, port=?,pseudo=?,pwd=? WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             // set the corresponding param
-            ps.setInt(1, client.getId());
+            ps.setString(1, client.getIp());
+            ps.setInt(2, client.getPort());
+            // execute the delete statement
+            ps.setString(3, client.getPseudo());
+            ps.setString(4,client.getPwd());
+            ps.setInt(5, client.getId());
+            ps.executeUpdate();
+
+
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+
+    }
+
+    /********************* Node ************************/
+
+    private void initNodeTable() {
+        String sql = "CREATE TABLE Node (" +
+                "id INTEGER NOT NULL AUTO_INCREMENT, " +
+                "name VARCHAR(255) NOT NULL, " +
+                "masterUser VARCHAR(255) NOT NULL," +
+                "PRIMARY KEY(id))";
+        try {
+            PreparedStatement ps = connection.prepareStatement(sql);
+            ps.executeUpdate();
+            ps.closeOnCompletion();
+            System.out.println("Node table create");
+        } catch (SQLException e) {
+            System.out.println("code: "+e.getErrorCode());
+            // the table already exist
+            if(e.getErrorCode()==42101){
+                System.out.println("the table Node already exist");
+            }else
+                e.printStackTrace();
+        }
+
+    }
+
+    // Add new client to the database
+    public void newNode(Node node){
+        String sql = "INSERT INTO Node VALUES(" + node.getName()+", "+node.getMasterUser()+")";
+        try {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.executeUpdate();
+            statement.closeOnCompletion();
+        } catch (SQLException e) {
+            System.out.println("ERROR new node");
+            e.printStackTrace();
+        }
+    }
+
+    public List<Node> getAllNode(){
+        String sql = "SELECT * FROM Node";
+        List<Node> list = new LinkedList<>();
+        try {
+            PreparedStatement st = connection.prepareStatement(sql);
+            ResultSet rs = st.executeQuery();
+            while(rs.next()){
+                list.add(getNodeFromRs(rs));
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public Node getNodeByName(String name) {
+        String sql = "SELECT FROM Node WHERE name =" + name;
+        Node node = null;
+        try {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet rs = statement.executeQuery();
+            node = getNodeFromRs(rs);
+
+            statement.closeOnCompletion();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return node;
+    }
+
+    public void deleteNode(Node node) {
+        String sql = "DELETE FROM Node WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            // set the corresponding param
+            ps.setInt(1, node.getId());
             // execute the delete statement
             ps.executeUpdate();
 
@@ -173,15 +277,23 @@ public class DatabaseSQL {
 
     }
 
-    public void updateClt(Client client){
-        String sql = "";
-        Client clt = getClientByPseudo(client.getPseudo());
+    public void updateNode(Node newNode) {
+        Node node = getNodeByName(newNode.getName());
+        String sql = "UPDATE Client SET masterUser=? WHERE id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            // set the corresponding param
+            ps.setString(1, node.getMasterUser());
+            ps.setInt(2, node.getId());
+            // execute the delete statement
+            ps.executeUpdate();
+
+
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
 
 
     }
-
-    /********************* Node ************************/
-
 
 
 
@@ -193,7 +305,7 @@ public class DatabaseSQL {
     }
 
     private Node getNodeFromRs(ResultSet rs) throws  SQLException{
-        return new Node(rs.getInt("id"), rs.getString("name"), rs.getString("masterPseudo"));
+        return new Node(rs.getInt("id"), rs.getString("name"), rs.getString("masterUser"));
     }
 
 

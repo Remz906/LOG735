@@ -10,6 +10,8 @@ public class Client implements Serializable {
     private String pseudo;
     private String pwd;
 
+
+
     public Client(int id, String ip, int port, String pseudo, String pwd) {
         this.id = id;
         this.ip = ip;
@@ -35,6 +37,20 @@ public class Client implements Serializable {
     public String getPwd(){return pwd;}
 
     public void setPwd(String pwd){this.pwd = pwd;}
+    public Client setIp(String ip) {
+        this.ip = ip;
+        return this;
+    }
+
+    public Client setPort(int port) {
+        this.port = port;
+        return this;
+    }
+
+    public Client setPseudo(String pseudo) {
+        this.pseudo = pseudo;
+        return this;
+    }
 
     @Override
     public boolean equals(Object o) {

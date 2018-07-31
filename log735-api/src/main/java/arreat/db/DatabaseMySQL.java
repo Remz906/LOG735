@@ -40,7 +40,7 @@ public class DatabaseMySQL extends DatabaseSQL{
     // Add new client to the database
     public void addNode(Node node){
         try {
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO node  VALUES("+ node.getName() +","+node.getMasterPseudo()+")");
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO node  VALUES("+ node.getName() +","+node.getMasterUser()+")");
             statement.executeUpdate();
             statement.closeOnCompletion();
         } catch (SQLException e) {
