@@ -152,6 +152,13 @@ public class Server implements Runnable {
         return cltTrue.getPwd().equals(pass);
     }
 
+    private boolean authNode(String name, String pass){
+        Node node = this.db.getNodeByName(name);
+        if (node != null)
+            return node.getPwd().equals(pass);
+        return false;
+    }
+
     private void updateDBIfNeeded(String ip, int portNb, long otherDbTime) throws UnknownHostException {
 
         long threshold = 1000;
@@ -299,6 +306,15 @@ public class Server implements Runnable {
                                 NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
                                 break;
                             case AUTH:
+                                boolean auth = authNode(msg[2], msg[3]);
+                                if (auth) {
+                                    node = this.db.getNodeByName(msg[2]);
+                                    clt = this.db.getClientByPseudo(node.getMasterUser());
+                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":"+gson.toJson(clt));
+                                    gossip = false;
+                                } else {
+                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
+                                }
 
                                 break;
 
