@@ -44,4 +44,9 @@ public final class RegistryService implements Service {
             this.registry = new CacheRegistry(cfg.getRemotes());
         }
     }
+
+    @Override
+    public EventManager getEventManager() {
+        return null;
+    }
 }

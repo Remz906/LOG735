@@ -1,5 +1,10 @@
 package client.ui;
 
+import arreat.api.registry.RegistryEntry;
+import arreat.impl.core.NetService;
+import arreat.impl.core.RegistryService;
+import arreat.impl.registry.RoomBaseEntry;
+import client.chat.Message;
 import javafx.geometry.Side;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -17,8 +22,8 @@ public class ChatTabs extends TabPane {
         tabs = this.getTabs();
     }
 
-    public static void receiveMessage(String sender, String message) {
-        ChatTab chat = getChat(sender);
+    public static void receiveMessage(String chatName, String sender, String message) {
+        ChatTab chat = getChat(chatName);
 
         if (chat != null) {
             chat.addMessage(sender, message);
@@ -132,8 +137,26 @@ public class ChatTabs extends TabPane {
         private void sendMessage() {
             String message = this.input.getText().trim();
             if (!"".equals(message)) {
-                
-                // TODO: Implement send.
+
+                // TODO: Manage group chat as the master node.
+                RegistryEntry target = RegistryService.getInstance().getRegistry().get(this.getText());
+
+                Message chatMessage = new Message();
+
+                chatMessage.setRecipient(target.getKey());
+                chatMessage.setBody(message);
+                chatMessage.setSender(RegistryService.getInstance().getRegistry().getSelf().getKey());
+
+                if (target instanceof RoomBaseEntry) {
+                    for (String member : ((RoomBaseEntry) target).getMembers()) {
+                        if (!RegistryService.getInstance().getRegistry().isSelf(member) && !member.equals(chatMessage.getSender())) {
+                            RegistryEntry e = RegistryService.getInstance().getRegistry().get(member);
+                            NetService.getInstance().send(e.getAddress(), chatMessage.toString());
+                        }
+                    }
+                } else {
+                    NetService.getInstance().send(target.getAddress(), chatMessage.toString());
+                }
                 this.addMessage("me", message);
                 this.input.setText("");
             }

@@ -11,6 +11,7 @@ public class CacheRegistry implements Registry {
 
     private final Map<String, RegistryEntry> entries;
     private RegistryEntry defaultRemote;
+    private RegistryEntry self;
     private final List<RegistryEntry> remotes;
 
     @SuppressWarnings("unchecked")
@@ -31,7 +32,7 @@ public class CacheRegistry implements Registry {
 
     @Override
     public boolean isSelf(String key) {
-        return false;
+        return this.self.getKey().equals(key);
     }
 
     @Override
@@ -57,5 +58,15 @@ public class CacheRegistry implements Registry {
     @Override
     public RegistryEntry getDefaultRemote() {
         return this.defaultRemote;
+    }
+
+    @Override
+    public RegistryEntry getSelf() {
+        return this.self;
+    }
+
+    @Override
+    public void setSelf(RegistryEntry self) {
+        this.self = self;
     }
 }

@@ -11,4 +11,6 @@ public interface Registry {
     void save(RegistryEntry entry);
     List<RegistryEntry> getRemotes();
     RegistryEntry getDefaultRemote();
+    RegistryEntry getSelf();
+    void setSelf(RegistryEntry self);
 }

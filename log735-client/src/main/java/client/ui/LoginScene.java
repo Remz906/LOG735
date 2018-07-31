@@ -2,6 +2,7 @@ package client.ui;
 
 import arreat.impl.core.NetService;
 import client.Client;
+import client.core.LoginService;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -37,39 +38,26 @@ public class LoginScene extends Scene {
 
             this.loginButton = new Button("Login");
             this.loginButton.setOnMouseClicked(event -> {
-                if (login()) {
-                    switchScene();
-                }
+                Client.switchScene(new ChatScene(), "Chat");
             });
 
             this.registerButton = new Button("Register");
-            this.registerButton.setOnMouseClicked(event -> {
-                if (register()) {
-                    switchScene();
-                }
-            });
+            this.registerButton.setOnMouseClicked(event ->
+                    LoginService.getInstance().register(username.getText(), password.getText()));
 
             this.add(USERNAME_LABEL, 1, 1);
-            this.add(PASSWORD_LABEL, 1, 2);
-            this.add(this.loginButton, 1, 3);
-
             this.add(this.username, 2, 1);
+
+            this.add(PASSWORD_LABEL, 1, 2);
             this.add(this.password, 2, 2);
+
+            this.add(this.loginButton, 1, 3);
+            this.add(this.registerButton, 2, 3);
         }
 
-        private boolean login() {
-            // TODO: Implement.
-
-//            NetService netService = NetService.getInstance();
-//            try {
-//                netService.send("", 0,
-//                        String.format("UF:AUTH:%s:%s", username.getText(), password.getText()));
-//
-//            } catch (UnknownHostException e) {
-//                // DO SOMETHING !?
-//            }
-            return true;
-        }
+//        private boolean login() {
+//            return LoginService.getInstance().login(this.username.getText(), this.password.getText());
+//        }
 
         private boolean register() {
             // TODO: Implement.

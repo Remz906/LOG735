@@ -22,9 +22,9 @@ public class ChatScene extends Scene {
         }
     }
 
-    public static void receiveMessage(String sender, String message) {
+    public static void receiveMessage(String chat, String sender, String message) {
         if (chatTabs != null) {
-            chatTabs.receiveMessage(sender, message);
+            ChatTabs.receiveMessage(chat, sender, message);
         }
     }
 }

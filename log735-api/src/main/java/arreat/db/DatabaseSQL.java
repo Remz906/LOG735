@@ -12,7 +12,7 @@ public class DatabaseSQL {
     private String username;
     private String password;
     private String dbDriver;
-    private String MAX_POOL = "250";
+    private static final String MAX_POOL = "250";
 
     protected Connection connection;
     private Properties properties;

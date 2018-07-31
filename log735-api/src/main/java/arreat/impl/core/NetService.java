@@ -44,6 +44,10 @@ public final class NetService implements Service {
         this.sender = new Sender(3);
     }
 
+    public void send(SocketAddress address, String string) {
+        this.sender.send(new DatagramPacket(string.getBytes(), string.getBytes().length, address));
+    }
+
     public void send(String ipAdd, int portNb, String string) throws UnknownHostException {
         InetAddress address = InetAddress.getByName(ipAdd);
         this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, portNumber));
@@ -104,5 +108,10 @@ public final class NetService implements Service {
         } catch (SocketException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public EventManager getEventManager() {
+        return null;
     }
 }
