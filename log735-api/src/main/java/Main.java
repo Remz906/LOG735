@@ -1,7 +1,4 @@
-import arreat.DB.Client;
-import arreat.DB.DatabaseH2;
-import arreat.DB.DatabaseSQL;
-import arreat.impl.Message;
+import arreat.db.DatabaseH2;
 import arreat.impl.core.NetService;
 
 import java.net.UnknownHostException;
@@ -22,12 +19,12 @@ public class Main {
                     try {
                         DB.initDBhistoricDiscussion();
 
-//                    DB.initDBClientIP();
-//                    DB.newMessage(new Message("discussion1", 1, "G4", "hello world"));
-//                    DB.newMessage(new Message("discussion1", 1, "G4", "hello world"));
-//                    System.out.println(DB.readMessages().size());
-//                    DB.newClient(new Client("197.565.454.454",49444, "G4" ));
-//                    DB.readClients();
+//                    db.initDBClientIP();
+//                    db.newMessage(new Message("discussion1", 1, "G4", "hello world"));
+//                    db.newMessage(new Message("discussion1", 1, "G4", "hello world"));
+//                    System.out.println(db.readMessages().size());
+//                    db.newClient(new Client("197.565.454.454",49444, "G4" ));
+//                    db.readClients();
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }

@@ -1,10 +1,6 @@
-package arreat.DB;
+package arreat.db;
 
-import arreat.impl.Message;
-
-import javax.swing.plaf.nimbus.State;
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -58,7 +54,7 @@ public class DatabaseSQL {
             try {
                 Class.forName(this.dbDriver);
                 connection = DriverManager.getConnection(databaseURL, getProperties());
-                System.out.println("DB connected");
+                System.out.println("db connected");
             } catch (ClassNotFoundException | SQLException e) {
                 e.printStackTrace();
             }
@@ -71,7 +67,7 @@ public class DatabaseSQL {
             try {
                 connection.close();
                 connection = null;
-                System.out.println("DB disconnected");
+                System.out.println("db disconnected");
             } catch (SQLException e) {
                 e.printStackTrace();
             }

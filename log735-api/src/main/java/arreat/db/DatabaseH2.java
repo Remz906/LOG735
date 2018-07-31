@@ -1,4 +1,4 @@
-package arreat.DB;
+package arreat.db;
 
 import arreat.impl.Message;
 
@@ -76,7 +76,7 @@ public class DatabaseH2 extends DatabaseSQL{
             statement.closeOnCompletion();
     }
 
-    // Create UDPMessage object with the DB
+    // Create UDPMessage object with the db
     public ArrayList<Message> readMessages() throws SQLException {
         Statement statement= null;
         ArrayList<Message> messages = new ArrayList();

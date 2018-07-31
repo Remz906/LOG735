@@ -1,8 +1,3 @@
-import arreat.DB.Client;
-import arreat.DB.DatabaseSQL;
-import arreat.impl.Message;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 //public class DatabaseH2Test {

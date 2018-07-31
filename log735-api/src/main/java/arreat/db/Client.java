@@ -1,4 +1,4 @@
-package arreat.DB;
+package arreat.db;
 
 import java.io.Serializable;
 import java.util.Objects;

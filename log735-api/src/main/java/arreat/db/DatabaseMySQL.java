@@ -1,9 +1,7 @@
-package arreat.DB;
+package arreat.db;
 
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Properties;
 
 public class DatabaseMySQL extends DatabaseSQL{
 

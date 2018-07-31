@@ -1,7 +1,8 @@
 package server;
 
 public class Utilities {
-    static public long ipToLong(String ipAddress) {
+
+    public static long ipToLong(String ipAddress) {
 
         String[] ipAddressInArray = ipAddress.split("\\.");
 
@@ -17,7 +18,7 @@ public class Utilities {
         return result;
     }
 
-    static public long ipAndPortToLong(String ip, int port){
+    public static long ipAndPortToLong(String ip, int port){
         return Long.valueOf(port) + ipToLong(ip);
     }
 }

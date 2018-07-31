@@ -1,8 +1,8 @@
 package server;
 
-import arreat.DB.Client;
-import arreat.DB.DatabaseMySQL;
-import arreat.DB.Node;
+import arreat.db.Client;
+import arreat.db.DatabaseMySQL;
+import arreat.db.Node;
 import arreat.impl.core.NetService;
 import arreat.impl.net.UDPMessage;
 import com.google.gson.Gson;
@@ -13,36 +13,36 @@ import java.util.List;
 
 public class Server implements Runnable{
 
-    private final int HB_TIMER = 10000;
-    private final String HB_MSG_HEATHER = "HB";
-    private final String HB_OK = "OK";
-    private final String HB_DOWN = "DOWN";
-    private final String HB_UNSTABLE = "UNSTABLE";
+    private static final int HB_TIMER = 10000;
+    private static final String HB_MSG_HEATHER = "HB";
+    private static final String HB_OK = "OK";
+    private static final String HB_DOWN = "DOWN";
+    private static final String HB_UNSTABLE = "UNSTABLE";
 
-    private final int MASTER_ELECTION_TIMER = 500000;
-    private final String MASTER_ELECTION = "ME";
-    private final String MASTER_FIND_MASTER = "FIND_MASTER";
-    private final String INFO_IS_MASTER = "isMaster";
-    private final String INFO_FM_RESPONSE = "FMR";
+    private static final int MASTER_ELECTION_TIMER = 500000;
+    private static final String MASTER_ELECTION = "ME";
+    private static final String MASTER_FIND_MASTER = "FIND_MASTER";
+    private static final String INFO_IS_MASTER = "isMaster";
+    private static final String INFO_FM_RESPONSE = "FMR";
     private long beginTimer;
 
-    private final String USER_HEATHER = "USER";
+    private static final String USER_HEATHER = "USER";
 
-    private final String USER_GET_BY_PSEUDO = "GET_BY_PSEUDO";
-    private final String USER_GET_RESPONSE = "GR";
+    private static final String USER_GET_BY_PSEUDO = "GET_BY_PSEUDO";
+    private static final String USER_GET_RESPONSE = "GR";
 
-    private final String COMMAND_UPDATE = "UPDATE";
-    private final String COMMAND_ADD = "ADD";
-    private final String COMMAND_GOSSIP = "GOSSIP";
-    private final String COMMAND_DELETE = "DELETE";
-
-
-
-    private final String USER_FRONT_HEATHER = "UF";
-    private final String UF_UPDATE_MASTER = "UM";
+    private static final String COMMAND_UPDATE = "UPDATE";
+    private static final String COMMAND_ADD = "ADD";
+    private static final String COMMAND_GOSSIP = "GOSSIP";
+    private static final String COMMAND_DELETE = "DELETE";
 
 
-    private final String NODE_HEATHER = "NODE";
+
+    private static final String USER_FRONT_HEATHER = "UF";
+    private static final String UF_UPDATE_MASTER = "UM";
+
+
+    private static final String NODE_HEATHER = "NODE";
 
 
     private boolean shutdownRequested = false;
@@ -88,7 +88,7 @@ public class Server implements Runnable{
         this.ipAdd = ip;
         this.portNb = portNb;
         boolean preIsMaster = isMaster;
-        isMaster = (ipAdd == masterIp);
+        isMaster = (ipAdd.equals(masterIp));
         if (!preIsMaster && isMaster){
             try {
                 sendCommandToAllClients(USER_FRONT_HEATHER +":" + UF_UPDATE_MASTER+":"+ipAdd+":"+String.valueOf(portNb));
@@ -153,9 +153,9 @@ public class Server implements Runnable{
                 String[] msg = udpMessage.getMsg().split(":");
                 switch(msg[0]){
                     case HB_MSG_HEATHER:
-                        if (msg[1] == HB_OK){
+                        if (HB_OK.equals(msg[1])){
                             sendACK(udpMessage.getIp(), udpMessage.getPort(), HB_MSG_HEATHER);
-                        }else if (msg[1] == "ACK"){
+                        }else if ("ACK".equals(msg[1])){
                             beginTimer = System.currentTimeMillis();
                         }
                         break;
@@ -245,11 +245,10 @@ public class Server implements Runnable{
 
             }
 
-        }catch(Exception e ){}
+        } catch(Exception e ){}
 
         finally {
             shutdown();
-
         }
 
     }
