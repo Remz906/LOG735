@@ -33,6 +33,14 @@ public class Main {
 
         boolean shutdown = false;
         server.run();
-        while(true);
+        Scanner sc = new Scanner(System.in);
+
+
+        while(shutdown){
+
+            if (sc.nextLine() == "1"){
+                shutdown = true;
+            }
+        };
     }
 }

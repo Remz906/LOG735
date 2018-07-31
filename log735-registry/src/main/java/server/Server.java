@@ -5,11 +5,14 @@ import arreat.db.DatabaseMySQL;
 import arreat.db.Node;
 import arreat.impl.core.NetService;
 import arreat.impl.net.UDPMessage;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.sun.xml.internal.bind.v2.TODO;
+import sun.nio.ch.Net;
 
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Server implements Runnable {
@@ -29,14 +32,17 @@ public class Server implements Runnable {
     private long lastBDUpdate; //needed for restore
 
     private static final String USER_HEATHER = "USER";
-
     private static final String USER_GET_BY_PSEUDO = "GET_BY_PSEUDO";
     private static final String USER_GET_RESPONSE = "GR";
+
+    private static final String NODE_HEATHER = "NODE";
+    private static final String NODE_GET_BY_NAME = "GET_BY_NAME";
 
     private static final String COMMAND_UPDATE = "UPDATE";
     private static final String COMMAND_ADD = "ADD";
     private static final String COMMAND_GOSSIP = "GOSSIP";
     private static final String COMMAND_DELETE = "DELETE";
+    private static final String COMMAND_UPDATE_ALL = "UPDATE_ALL";
 
 
     private static final String USER_FRONT_HEATHER = "UF";
@@ -44,8 +50,8 @@ public class Server implements Runnable {
     private static final String UF_AUTH = "AUTH";
 
 
-    private static final String NODE_HEATHER = "NODE";
-    private static final String NODE_GET_BY_NAME = "GET_BY_NAME";
+
+
 
 
     private boolean shutdownRequested = false;
@@ -73,16 +79,16 @@ public class Server implements Runnable {
 
     private void init() {
         db = new DatabaseMySQL();
+        lastBDUpdate = 0;
         electMaster();
         initHeartBeatThread();
-        lastBDUpdate = System.currentTimeMillis();
     }
 
 
     private void electMaster() {
         try {
             masterIp = ipAdd;
-            sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER);
+            sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER+":"+String.valueOf(lastBDUpdate));
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
@@ -148,6 +154,18 @@ public class Server implements Runnable {
         return cltTrue.getPwd().equals(pass);
     }
 
+    private void updateDBIfNeeded(String ip, int portNb, long otherDbTime) throws UnknownHostException {
+
+        long threshold = 1000;
+        if (Math.abs(this.lastBDUpdate - otherDbTime) > threshold && lastBDUpdate > otherDbTime) {
+            List<Client> updatedCltList = this.db.getAllClients();
+            List<Node> updatedNodeList = this.db.getAllNode();
+            Gson gson = new Gson();
+            NetService.getInstance().send(ip, portNb, USER_HEATHER + ":" + COMMAND_UPDATE_ALL + ":" + gson.toJson(updatedCltList));
+            NetService.getInstance().send(ip, portNb, NODE_HEATHER + ":" + COMMAND_UPDATE_ALL + ":" + gson.toJson(updatedNodeList));
+        }
+    }
+
 
     @Override
     public void run() {
@@ -169,12 +187,14 @@ public class Server implements Runnable {
                         }
                         break;
                     case MASTER_ELECTION:
+
                         switch (msg[1]) {
                             case MASTER_FIND_MASTER:
                                 if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(masterIp, masterPort)) {
                                     setMaster(udpMessage.getIp(), udpMessage.getPort());
                                 }
                                 NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
+                                updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg[2]));
                                 break;
                             case INFO_FM_RESPONSE:
                                 if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(masterIp, masterPort)) {
@@ -182,8 +202,7 @@ public class Server implements Runnable {
                                 } else {
                                     setMaster(this.ipAdd, this.portNb);
                                 }
-
-                                //TODO update if needed
+                                updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg[2]));
                                 break;
 
                         }
@@ -199,6 +218,10 @@ public class Server implements Runnable {
                             case COMMAND_UPDATE:
                                 clt = gson.fromJson(msg[2], Client.class);
                                 this.db.updateClt(clt);
+                                break;
+                            case COMMAND_UPDATE_ALL:
+                                List<Client> cltList = gson.fromJson(msg[3], new TypeToken<List<Client>>(){}.getType());
+                                this.db.updateAllClt(cltList);
                                 break;
                             case COMMAND_DELETE:
                                 clt = gson.fromJson(msg[2], Client.class);
@@ -222,6 +245,10 @@ public class Server implements Runnable {
                             case COMMAND_UPDATE:
                                 node = gson.fromJson(msg[2], Node.class);
                                 this.db.updateNode(node);
+                                break;
+                            case COMMAND_UPDATE_ALL:
+                                List<Node> nodeList = gson.fromJson(msg[3], new TypeToken<List<Node>>(){}.getType());
+                                this.db.updateAllNode(nodeList);
                                 break;
                             case COMMAND_DELETE:
                                 node = gson.fromJson(msg[2], Node.class);

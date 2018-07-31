@@ -189,8 +189,12 @@ public class DatabaseSQL {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+    }
 
-
+    public void updateAllClt(List<Client> clients) {
+        for (Client client: clients){
+            updateClt(client);
+        }
     }
 
     /********************* Node ************************/
@@ -291,8 +295,12 @@ public class DatabaseSQL {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+    }
 
-
+    public void updateAllNode(List<Node> nodes){
+        for(Node node:nodes){
+            updateNode(node);
+        }
     }
 
 
