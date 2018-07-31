@@ -7,12 +7,9 @@ import arreat.impl.core.NetService;
 import arreat.impl.net.UDPMessage;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import com.sun.xml.internal.bind.v2.TODO;
-import sun.nio.ch.Net;
 
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Server implements Runnable {
@@ -43,11 +40,11 @@ public class Server implements Runnable {
     private static final String COMMAND_GOSSIP = "GOSSIP";
     private static final String COMMAND_DELETE = "DELETE";
     private static final String COMMAND_UPDATE_ALL = "UPDATE_ALL";
+    private static final String COMMAND_GET_BY_USERNAME = "GET_BY_USERNAME";
 
 
-    private static final String USER_FRONT_HEATHER = "UF";
-    private static final String UF_UPDATE_MASTER = "UM";
-    private static final String UF_AUTH = "AUTH";
+    private static final String UPDATE_MASTER = "UM";
+    private static final String AUTH = "AUTH";
 
 
 
@@ -101,7 +98,7 @@ public class Server implements Runnable {
         isMaster = (ipAdd.equals(masterIp));
         if (!preIsMaster && isMaster) {
             try {
-                sendCommandToAllClients(USER_FRONT_HEATHER + ":" + UF_UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
+                sendCommandToAllClients(USER_HEATHER + ":" + UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             }
@@ -114,7 +111,8 @@ public class Server implements Runnable {
 
     private void sendCommandToAllServers(String command) throws UnknownHostException {
         for (Pair<String, Integer> server : ipAddOfServers) {
-            NetService.getInstance().send(server.getL(), server.getR(), command);
+            if (!ipAdd.equals(server.getL()) && portNb != server.getR())
+                NetService.getInstance().send(server.getL(), server.getR(), command);
         }
     }
 
@@ -213,62 +211,47 @@ public class Server implements Runnable {
                         switch (msg[1]) {
                             case COMMAND_ADD:
                                 clt = gson.fromJson(msg[2], Client.class);
-                                this.db.newClient(clt);
+                                if (this.db.getClientByPseudo(clt.getPseudo()) == null) {
+                                    this.db.newClient(clt);
+                                    this.lastBDUpdate = System.currentTimeMillis();
+                                    this.sendACK(udpMessage.getIp(),udpMessage.getPort(),USER_HEATHER);
+                                }else{
+                                    //already exist
+                                }
                                 break;
                             case COMMAND_UPDATE:
                                 clt = gson.fromJson(msg[2], Client.class);
                                 this.db.updateClt(clt);
+                                this.lastBDUpdate = System.currentTimeMillis();
+                                this.sendACK(udpMessage.getIp(),udpMessage.getPort(),USER_HEATHER);
                                 break;
                             case COMMAND_UPDATE_ALL:
                                 List<Client> cltList = gson.fromJson(msg[3], new TypeToken<List<Client>>(){}.getType());
                                 this.db.updateAllClt(cltList);
+                                this.lastBDUpdate = System.currentTimeMillis();
+                                this.sendACK(udpMessage.getIp(),udpMessage.getPort(),USER_HEATHER);
                                 break;
                             case COMMAND_DELETE:
                                 clt = gson.fromJson(msg[2], Client.class);
                                 this.db.deleteClt(clt);
+                                this.lastBDUpdate = System.currentTimeMillis();
+                                this.sendACK(udpMessage.getIp(),udpMessage.getPort(),USER_HEATHER);
                                 break;
                             case USER_GET_BY_PSEUDO:
                                 clt = this.db.getClientByPseudo(msg[2]);
                                 NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(clt));
                                 break;
-                        }
-                        this.lastBDUpdate = System.currentTimeMillis();
-                        break;
+                            case COMMAND_GET_BY_USERNAME:
+                                List<String> cltNameList = gson.fromJson(msg[3], new TypeToken<List<String>>(){}.getType());
 
-                    case NODE_HEATHER:
-                        Node node;
-                        switch (msg[1]) {
-                            case COMMAND_ADD:
-                                node = gson.fromJson(msg[2], Node.class);
-                                this.db.newNode(node);
-                                break;
-                            case COMMAND_UPDATE:
-                                node = gson.fromJson(msg[2], Node.class);
-                                this.db.updateNode(node);
-                                break;
-                            case COMMAND_UPDATE_ALL:
-                                List<Node> nodeList = gson.fromJson(msg[3], new TypeToken<List<Node>>(){}.getType());
-                                this.db.updateAllNode(nodeList);
-                                break;
-                            case COMMAND_DELETE:
-                                node = gson.fromJson(msg[2], Node.class);
-                                this.db.deleteNode(node);
-                                break;
-                            case NODE_GET_BY_NAME:
-                                node = this.db.getNodeByName(msg[2]);
-                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
-                                break;
 
-                        }
-                        this.lastBDUpdate = System.currentTimeMillis();
-                        break;
-                    case USER_FRONT_HEATHER:
-                        switch (msg[1]) {
-                            case UF_AUTH:
+
+                                break;
+                            case AUTH:
                                 boolean auth = authClt(msg[2], msg[3]);
 
                                 if (auth) {
-                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_FRONT_HEATHER + ":" + UF_AUTH + ":Success");
+                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Success");
                                     clt = this.db.getClientByPseudo(msg[2]);
 
                                     //update if needed
@@ -281,10 +264,46 @@ public class Server implements Runnable {
                                     }
 
                                 } else {
-                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_FRONT_HEATHER + ":" + UF_AUTH + ":Failed");
+                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
                                 }
                                 break;
                         }
+
+                        break;
+
+                    case NODE_HEATHER:
+                        Node node;
+                        switch (msg[1]) {
+                            case COMMAND_ADD:
+                                node = gson.fromJson(msg[2], Node.class);
+                                this.db.newNode(node);
+                                this.sendACK(udpMessage.getIp(),udpMessage.getPort(),NODE_HEATHER);
+                                break;
+                            case COMMAND_UPDATE:
+                                node = gson.fromJson(msg[2], Node.class);
+                                this.db.updateNode(node);
+                                this.sendACK(udpMessage.getIp(),udpMessage.getPort(),NODE_HEATHER);
+                                break;
+                            case COMMAND_UPDATE_ALL:
+                                List<Node> nodeList = gson.fromJson(msg[3], new TypeToken<List<Node>>(){}.getType());
+                                this.db.updateAllNode(nodeList);
+                                this.sendACK(udpMessage.getIp(),udpMessage.getPort(),NODE_HEATHER);
+                                break;
+                            case COMMAND_DELETE:
+                                node = gson.fromJson(msg[2], Node.class);
+                                this.db.deleteNode(node);
+                                this.sendACK(udpMessage.getIp(),udpMessage.getPort(),NODE_HEATHER);
+                                break;
+                            case NODE_GET_BY_NAME:
+                                node = this.db.getNodeByName(msg[2]);
+                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
+                                break;
+                            case AUTH:
+
+                                break;
+
+                        }
+                        this.lastBDUpdate = System.currentTimeMillis();
                         break;
 
                     default:

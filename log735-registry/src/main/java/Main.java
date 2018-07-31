@@ -39,6 +39,7 @@ public class Main {
         while(shutdown){
 
             if (sc.nextLine() == "1"){
+                server.requestShutdown();
                 shutdown = true;
             }
         };
