@@ -1,0 +1,61 @@
+package arreat.impl.registry;
+
+import arreat.api.registry.Registry;
+import arreat.api.registry.RegistryEntry;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class CacheRegistry implements Registry {
+
+    private final Map<String, RegistryEntry> entries;
+    private RegistryEntry defaultRemote;
+    private final List<RegistryEntry> remotes;
+
+    @SuppressWarnings("unchecked")
+    public CacheRegistry(List<? extends RegistryEntry> remotes) {
+        this.remotes = (List<RegistryEntry>) remotes;
+        this.entries = new HashMap<>();
+    }
+
+    @Override
+    public boolean contains(String key) {
+        return this.entries.containsKey(key);
+    }
+
+    @Override
+    public RegistryEntry get(String key) {
+        return this.entries.get(key);
+    }
+
+    @Override
+    public boolean isSelf(String key) {
+        return false;
+    }
+
+    @Override
+    public boolean isSelf(RegistryEntry entry) {
+        return false;
+    }
+
+    @Override
+    public boolean equals(RegistryEntry entry1, RegistryEntry entry2) {
+        return false;
+    }
+
+    @Override
+    public void save(RegistryEntry entry) {
+        this.entries.put(entry.getKey(), entry);
+    }
+
+    @Override
+    public List<RegistryEntry> getRemotes() {
+        return this.remotes;
+    }
+
+    @Override
+    public RegistryEntry getDefaultRemote() {
+        return this.defaultRemote;
+    }
+}
