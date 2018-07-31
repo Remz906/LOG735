@@ -1,6 +1,7 @@
 package client.ui;
 
 import arreat.impl.core.NetService;
+import client.Client;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -35,13 +36,8 @@ public class LoginScene extends Scene {
             this.password = new PasswordField();
 
             this.loginButton.setOnMouseClicked(event -> {
-                NetService netService = NetService.getInstance();
-                try {
-                    netService.send("", 0,
-                            String.format("UF:AUTH:%s:%s", username.getText(), password.getText()));
-
-                } catch (UnknownHostException e) {
-                    // DO SOMETHING !?
+                if (login()) {
+                    switchScene();
                 }
             });
 
@@ -51,6 +47,24 @@ public class LoginScene extends Scene {
 
             this.add(this.username, 2, 1);
             this.add(this.password, 2, 2);
+        }
+
+        private boolean login() {
+            // TODO: Implement.
+
+//            NetService netService = NetService.getInstance();
+//            try {
+//                netService.send("", 0,
+//                        String.format("UF:AUTH:%s:%s", username.getText(), password.getText()));
+//
+//            } catch (UnknownHostException e) {
+//                // DO SOMETHING !?
+//            }
+            return true;
+        }
+
+        private void switchScene() {
+            Client.switchScene(new ChatScene(), "Chat");
         }
 
         static {

@@ -1,54 +1,66 @@
 package client;
 
+import arreat.impl.core.NetService;
+import arreat.impl.net.UDPMessage;
+import client.ui.ChatScene;
 import client.ui.LoginScene;
 import javafx.application.Application;
-import javafx.geometry.Pos;
-import javafx.geometry.Side;
-import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+
+import java.net.SocketException;
 
 public class Client extends Application {
 
-    public static void main(String[] args) {
+    private static Stage primaryStage;
+
+    public static void main(String[] args) throws SocketException {
+        // Service Initialization.
+        NetService netService = NetService.getInstance();
+
+        netService.setIpAddress("127.0.0.1");
+        netService.setPortNumber(1337);
+
+        netService.init();
+
+        // Start the service.
+        new MessageReceiver().start();
+
         Application.launch(args);
     }
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
-//        primaryStage.setTitle("Tabs");
-//        Group root = new Group();
-//        Scene scene = new Scene(root, 400, 250, Color.WHITE);
-//
-//        TabPane tabPane = new TabPane();
-//        tabPane.setSide(Side.LEFT);
-//
-//        BorderPane borderPane = new BorderPane();
-//        for (int i = 0; i < 5; i++) {
-//            Tab tab = new Tab();
-//            tab.setText("Tab" + i);
-//            HBox hbox = new HBox();
-//            hbox.getChildren().add(new Label("Tab" + i));
-//            hbox.setAlignment(Pos.CENTER);
-//            tab.setContent(hbox);
-//            tabPane.getTabs().add(tab);
-//        }
-//        // bind to take available space
-//        borderPane.prefHeightProperty().bind(scene.heightProperty());
-//        borderPane.prefWidthProperty().bind(scene.widthProperty());
-//
-//        borderPane.setCenter(tabPane);
-//        root.getChildren().add(borderPane);
-//        primaryStage.setScene(scene);
-        primaryStage.setTitle("Login");
-        primaryStage.setScene(new LoginScene());
+    public void start(Stage stage) throws Exception {
+        primaryStage  = stage;
+        switchScene(new LoginScene(), "Login");
+    }
+
+    public static void switchScene(Scene scene, String title) {
+        primaryStage.setTitle(title);
+        primaryStage.setScene(scene);
 
         primaryStage.show();
+    }
+
+    private static class MessageReceiver extends Thread {
+
+        private MessageReceiver() {
+            super(() -> {
+                while(true) {
+                    NetService netService = NetService.getInstance();
+
+                    UDPMessage udpMessage = netService.receive();
+
+                    // TODO: Implement stuff....
+
+                    // Case it's a login success.
+
+                    // Case it's a chat message.
+                    if (false && primaryStage != null && primaryStage.getScene() instanceof ChatScene) {
+//                        ChatScene.receiveMessage();
+                    }
+                }
+            });
+        }
     }
 }

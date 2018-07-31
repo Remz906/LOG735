@@ -20,6 +20,7 @@ public class Receiver implements Runnable {
     public Receiver(DatagramSocket socket, byte[] buffer) {
         this.socket = socket;
         this.buffer = buffer;
+        this.UDPMessages = new LinkedList<>();
     }
 
     public LinkedList<UDPMessage> getUDPMessages() {
