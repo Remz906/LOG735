@@ -127,9 +127,7 @@ public class Server implements Runnable{
                     if (masterIp != null && !isMaster){
                         NetService.getInstance().send(masterIp, masterPort, HB_MSG_HEATHER+":"+HB_OK);
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (UnknownHostException e) {
+                } catch (InterruptedException | UnknownHostException e) {
                     e.printStackTrace();
                 }
 

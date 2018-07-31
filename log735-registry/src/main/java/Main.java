@@ -2,17 +2,21 @@ import server.Pair;
 import server.Server;
 
 import java.net.Inet4Address;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.*;
 
 public class Main {
 
-    static private String LOCAL_HOST = "127.0.0.0";
-    static private List<Pair<String, Integer>> listOfServers = new LinkedList<>();
-    public static void main(String[] args) {
-        listOfServers.add(new Pair("127.0.0.1", 9080));
-        listOfServers.add(new Pair("127.0.0.1", 9081));
-        listOfServers.add(new Pair ("127.0.0.1", 9082));
+    private static final String LOCAL_HOST = "127.0.0.0";
+
+    private static List<Pair<String, Integer>> listOfServers = new LinkedList<>();
+
+
+    public static void main(String[] args) throws SocketException {
+        listOfServers.add(new Pair<>("127.0.0.1", 9080));
+        listOfServers.add(new Pair<>("127.0.0.1", 9081));
+        listOfServers.add(new Pair<>("127.0.0.1", 9082));
 
         Server server = null;
         switch(args[0]){
@@ -27,11 +31,8 @@ public class Main {
                 break;
         }
 
-
-
         boolean shutdown = false;
         server.run();
         while(true);
-
     }
 }
