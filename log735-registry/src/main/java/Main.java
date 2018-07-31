@@ -31,17 +31,19 @@ public class Main {
                 break;
         }
 
-        boolean shutdown = false;
-        server.run();
-        Scanner sc = new Scanner(System.in);
+        if (server != null) {
+            boolean shutdown = false;
+            new Thread(server).start();
+            Scanner sc = new Scanner(System.in);
 
 
-        while(shutdown){
-
-            if (sc.nextLine() == "1"){
-                server.requestShutdown();
-                shutdown = true;
+            while (!shutdown) {
+                if ("exit".equals(sc.nextLine())) {
+                    server.requestShutdown();
+                    shutdown = true;
+                }
             }
-        };
+            System.exit(0);
+        }
     }
 }
