@@ -17,7 +17,6 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import java.net.SocketException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,7 +27,7 @@ public class Client extends Application {
 
     private static boolean stopped = false;
 
-    public static void main(String[] args) throws SocketException {
+    public static void main(String[] args) {
         // Service Initialization.
         NetService.getInstance().configure();
         RegistryService.getInstance().configure();
@@ -135,8 +134,7 @@ public class Client extends Application {
                                                 // Manage the refresh info response.
                                                 case "GET_BY_USERNAMES":
                                                     List<arreat.db.Client> clients = new Gson().fromJson(msg.group(2),
-                                                            new TypeToken<List<arreat.db.Client>>() {
-                                                            }.getType());
+                                                            new TypeToken<List<arreat.db.Client>>() {}.getType());
 
                                                     for (arreat.db.Client c : clients) {
                                                         RegistryEntry entry = RegistryService.getInstance().getRegistry().get(c.getPseudo());
@@ -291,12 +289,6 @@ public class Client extends Application {
                 }
             });
         }
-
-        // USER:ADD:{CLIENT}
-
-
-        // USER:GET_BY_USERNAME:{json de list de string qui sont les username} (refresh registry).
-        // Returns List of Client (as json).
 
         static {
             MSG_PATTERN = Pattern.compile("(\\w+):(.+)");

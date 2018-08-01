@@ -18,6 +18,7 @@ public class CacheRegistry implements Registry {
     public CacheRegistry(List<? extends RegistryEntry> remotes) {
         this.remotes = (List<RegistryEntry>) remotes;
         this.entries = new HashMap<>();
+        this.defaultRemote = this.remotes.get(0);
     }
 
     @Override
