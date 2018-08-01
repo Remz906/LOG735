@@ -72,16 +72,6 @@ public class DatabaseSQL {
         }
     }
 
-    public ResultSet sendQuery(String query) throws SQLException {
-        ResultSet rs = null;
-        if (connection != null) {
-            Statement st = connection.createStatement();
-            rs = st.executeQuery(query);
-        }
-        return rs;
-    }
-
-
     /********************* Client ************************/
 
     private void initCltTable() {
@@ -91,9 +81,9 @@ public class DatabaseSQL {
                 "ip VARCHAR(255) NOT NULL," +
                 "port INTEGER NOT NULL," +
                 "pwd VARCHAR(20))";
-        try {
-            PreparedStatement ps = connection.prepareStatement(sql);
-            ps.executeUpdate();
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql);
+
             System.out.println("Client table create");
         } catch (SQLException e) {
             System.out.println("code: " + e.getErrorCode());
@@ -103,14 +93,16 @@ public class DatabaseSQL {
             } else
                 e.printStackTrace();
         }
-
     }
 
     // Add new client to the database
     public void newClient(Client client) {
-        String sql = "INSERT INTO Client VALUES(" + client.getPseudo() + ", " + client.getIp() + ", " + client.getPort() + ", " + client.getPwd() + ")";
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        String sql = "INSERT INTO Client VALUES(?,?,?,?)"; // + client.getPseudo() + "', '" + client.getIp() + "', " + client.getPort() + ", '" + client.getPwd() + "')";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, client.getPseudo());
+            statement.setString(2, client.getIp());
+            statement.setInt(3, client.getPort());
+            statement.setString(4, client.getPseudo());
             statement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("ERROR newClient");
@@ -121,12 +113,11 @@ public class DatabaseSQL {
     public List<Client> getAllClients() {
         String sql = "SELECT * FROM Client";
         List<Client> list = new LinkedList<>();
-        try {
-            PreparedStatement st = connection.prepareStatement(sql);
-            ResultSet rs = st.executeQuery();
-            while (rs.next()) {
-                list.add(getClientFromRs(rs));
-
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    list.add(getClientFromRs(rs));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -135,13 +126,13 @@ public class DatabaseSQL {
     }
 
     public Client getClientByPseudo(String pseudo) {
-        String sql = "SELECT FROM Client WHERE pseudo =" + pseudo;
+        String sql = "SELECT FROM Client WHERE pseudo = ?"; // + pseudo;
         Client clt = null;
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            ResultSet rs = statement.executeQuery();
-            clt = getClientFromRs(rs);
-
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, pseudo);
+            try (ResultSet rs = statement.executeQuery()) {
+                clt = getClientFromRs(rs);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -150,17 +141,18 @@ public class DatabaseSQL {
     }
 
     public Client getClientByIp(String ip) {
-        String sql = "SELECT FROM Client WHERE ip =" + ip;
+        String sql = "SELECT FROM Client WHERE ip = ?";
         Client clt = null;
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            ResultSet rs = statement.executeQuery();
-            clt = getClientFromRs(rs);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, ip);
+
+            try (ResultSet rs = statement.executeQuery()) {
+                clt = getClientFromRs(rs);
+            }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return clt;
     }
 
@@ -181,6 +173,7 @@ public class DatabaseSQL {
     public void updateClt(Client client) {
         Client clt = getClientByPseudo(client.getPseudo());
         String sql = "UPDATE Client SET ip=?, port=?,pseudo=?,pwd=? WHERE id = ?";
+
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             // set the corresponding param
             ps.setString(1, client.getIp());
@@ -190,7 +183,6 @@ public class DatabaseSQL {
             ps.setString(4, client.getPwd());
             ps.setInt(5, client.getId());
             ps.executeUpdate();
-
 
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -238,9 +230,11 @@ public class DatabaseSQL {
 
     // Add new client to the database
     public void newNode(Node node) {
-        String sql = "INSERT INTO Node VALUES(" + node.getName() + ", " + node.getMasterUser() + ", " + node.getPwd() + ")";
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
+        String sql = "INSERT INTO Node VALUES(?,?,?)"; // + node.getName() + ", " + node.getMasterUser() + ", " + node.getPwd() + ")";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, node.getName());
+            statement.setString(2, node.getMasterUser());
+            statement.setString(3, node.getPwd());
             statement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("ERROR new node");
@@ -251,12 +245,11 @@ public class DatabaseSQL {
     public List<Node> getAllNode() {
         String sql = "SELECT * FROM Node";
         List<Node> list = new LinkedList<>();
-        try {
-            PreparedStatement st = connection.prepareStatement(sql);
-            ResultSet rs = st.executeQuery();
-            while (rs.next()) {
-                list.add(getNodeFromRs(rs));
-
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) {
+                    list.add(getNodeFromRs(rs));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -265,17 +258,17 @@ public class DatabaseSQL {
     }
 
     public Node getNodeByName(String name) {
-        String sql = "SELECT FROM Node WHERE name =" + name;
+        String sql = "SELECT FROM Node WHERE name = ?"; // + name;
         Node node = null;
-        try {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            ResultSet rs = statement.executeQuery();
-            node = getNodeFromRs(rs);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, name);
 
+            try (ResultSet rs = statement.executeQuery()) {
+                node = getNodeFromRs(rs);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return node;
     }
 

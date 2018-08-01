@@ -39,11 +39,9 @@ public class LoginScene extends Scene {
 
             this.loginButton = new Button("Login");
             this.loginButton.setOnMouseClicked(event -> {
-                arreat.db.Client c = new arreat.db.Client(username.getText(), password.getText());
-
                 NetService.getInstance().send(
                         RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
-                        String.format("USER:AUTH:%s", c.toString()));
+                        String.format("USER:AUTH:%s:%s", username.getText(), password.getText()));
             });
 
             this.registerButton = new Button("Register");
