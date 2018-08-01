@@ -64,8 +64,6 @@ public class Server implements Runnable {
         this.ipAdd = ipAdd;
         this.portNb = portNb;
         this.ipAddOfServers = ipOfServers;
-        NetService.getInstance().setIpAddress(ipAdd);
-        NetService.getInstance().setPortNumber(portNb);
         NetService.getInstance().init();
         init();
     }
@@ -93,7 +91,7 @@ public class Server implements Runnable {
             beginTimer = System.currentTimeMillis();
             this.masterIp = ip;
             this.masterPort = portNb;
-            System.out.println("New master elected " + masterIp + ":" + String.valueOf(masterPort));
+            System.out.println("New master elected "ipAndPortToLong + masterIp + ":" + String.valueOf(masterPort));
             isMaster = (ipAdd.equals(masterIp));
             if (isMaster) {
                 try {
@@ -112,7 +110,7 @@ public class Server implements Runnable {
 
     private void sendCommandToAllServers(String command) throws UnknownHostException {
         for (Pair<String, Integer> server : ipAddOfServers) {
-            if (!ipAdd.equals(server.getL()) && portNb != server.getR())
+            if (!ipAdd.equals(server.getL()) || portNb != server.getR())
                 NetService.getInstance().send(server.getL(), server.getR(), command);
         }
     }
@@ -200,16 +198,14 @@ public class Server implements Runnable {
                             gossip = false;
                             switch (msg[1]) {
                                 case MASTER_FIND_MASTER:
-                                    if (Utilities.ipToLong(udpMessage.getIp()) > Utilities.ipToLong(this.ipAdd)) {
+                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
                                         setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                    }else{
-                                        setMaster(this.ipAdd, this.portNb);
                                     }
                                     NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
                                     updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg[2]));
                                     break;
                                 case INFO_FM_RESPONSE:
-                                    if (Utilities.ipToLong(udpMessage.getIp()) > Utilities.ipToLong(masterIp)) {
+                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
                                         setMaster(udpMessage.getIp(), udpMessage.getPort());
                                     } else {
                                         setMaster(this.ipAdd, this.portNb);

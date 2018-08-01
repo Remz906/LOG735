@@ -15,21 +15,22 @@ public class Main {
 
     public static void main(String[] args) throws SocketException {
         listOfServers.add(new Pair<>("127.0.0.1", 9080));
-        listOfServers.add(new Pair<>("127.0.0.2", 9081));
-        listOfServers.add(new Pair<>("127.0.0.3", 9082));
+        listOfServers.add(new Pair<>("127.0.0.1", 9081));
+        listOfServers.add(new Pair<>("127.0.0.1", 9082));
 
         Server server = null;
-        switch(args[0]){
-            case "1":
-                server = new Server(9080,"127.0.0.1", listOfServers);
-                break;
-            case "2":
-                server = new Server(9081, "127.0.0.2", listOfServers);
-                break;
-            case "3":
-                server = new Server(9081, "127.0.0.3", listOfServers);
-                break;
-        }
+//        switch(args[0]){
+//            case "1":
+//                server = new Server(9080,LOCAL_HOST, listOfServers);
+//                break;
+//            case "2":
+//                server = new Server(9081, LOCAL_HOST, listOfServers);
+//                break;
+//            case "3":
+//                server = new Server(9081, LOCAL_HOST, listOfServers);
+//                break;
+//        }
+        server = new Server(9080,"127.0.0.1", listOfServers);
 
         if (server != null) {
             boolean shutdown = false;
