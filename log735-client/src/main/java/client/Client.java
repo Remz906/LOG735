@@ -156,6 +156,17 @@ public class Client extends Application {
 
                                                     }
                                                     break;
+
+                                                case "UM":
+                                                    String[] address = msg.group(2).split(":");
+
+                                                    BaseEntry masterRemote = new BaseEntry();
+                                                    masterRemote.setPort(Integer.parseInt(address[1]));
+                                                    masterRemote.setNetAddress(address[0]);
+                                                    masterRemote.setKey("master");
+
+                                                    RegistryService.getInstance().getRegistry().setDefaultRemote(masterRemote);
+                                                break;
                                             }
                                         }
 
