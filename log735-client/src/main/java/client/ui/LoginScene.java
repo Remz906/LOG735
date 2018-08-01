@@ -42,6 +42,9 @@ public class LoginScene extends Scene {
                 NetService.getInstance().send(
                         RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
                         String.format("USER:AUTH:%s:%s", username.getText(), password.getText()));
+
+                username.setText("");
+                password.setText("");
             });
 
             this.registerButton = new Button("Register");
