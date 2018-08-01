@@ -4,6 +4,7 @@ public class Utilities {
 
     public static long ipToLong(String ipAddress) {
 
+
         String[] ipAddressInArray = ipAddress.split("\\.");
 
         long result = 0;

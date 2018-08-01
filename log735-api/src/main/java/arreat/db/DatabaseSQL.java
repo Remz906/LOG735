@@ -18,20 +18,17 @@ public class DatabaseSQL {
     private Properties properties;
 
     public DatabaseSQL(String databaseURL, String username, String password, String dbDriver) {
-    this.databaseURL = databaseURL;
-    this.username = username;
-    this.password = password;
-    this.dbDriver = dbDriver;
+        this.databaseURL = databaseURL;
+        this.username = username;
+        this.password = password;
+        this.dbDriver = dbDriver;
         try {
             connect();
+            initDB();
         } catch (Exception e) {
-            try {
-                initDB();
-                connect();
-            } catch (Exception e2) {
-                System.out.println("The connection with de database can't be established");
-                e.printStackTrace();
-            }
+            System.out.println("The connection with de database can't be established");
+            e.printStackTrace();
+
         }
     }
 
@@ -80,59 +77,54 @@ public class DatabaseSQL {
         if (connection != null) {
             Statement st = connection.createStatement();
             rs = st.executeQuery(query);
-            st.closeOnCompletion();
         }
         return rs;
     }
-
 
 
     /********************* Client ************************/
 
     private void initCltTable() {
         String sql = "CREATE TABLE Client (" +
-                "id INTEGER NOT NULL AUTO_INCREMENT, " +
+                "id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
                 "pseudo VARCHAR(255) NOT NULL, " +
                 "ip VARCHAR(255) NOT NULL," +
                 "port INTEGER NOT NULL," +
-                "pwd VARCHAR(20)m " +
-                "PRIMARY KEY(id))";
+                "pwd VARCHAR(20))";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.executeUpdate();
-            ps.closeOnCompletion();
             System.out.println("Client table create");
         } catch (SQLException e) {
-            System.out.println("code: "+e.getErrorCode());
+            System.out.println("code: " + e.getErrorCode());
             // the table already exist
-            if(e.getErrorCode()==42101){
+            if (e.getErrorCode() == 42101) {
                 System.out.println("the table Client already exist");
-            }else
+            } else
                 e.printStackTrace();
         }
 
     }
 
     // Add new client to the database
-    public void newClient(Client client){
-        String sql = "INSERT INTO Client VALUES(" + client.getPseudo()+", "+client.getIp()+", "+client.getPort()+", "+client.getPwd()+")";
+    public void newClient(Client client) {
+        String sql = "INSERT INTO Client VALUES(" + client.getPseudo() + ", " + client.getIp() + ", " + client.getPort() + ", " + client.getPwd() + ")";
         try {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.executeUpdate();
-            statement.closeOnCompletion();
         } catch (SQLException e) {
             System.out.println("ERROR newClient");
             e.printStackTrace();
         }
     }
 
-    public List<Client> getAllClients(){
+    public List<Client> getAllClients() {
         String sql = "SELECT * FROM Client";
         List<Client> list = new LinkedList<>();
         try {
             PreparedStatement st = connection.prepareStatement(sql);
             ResultSet rs = st.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 list.add(getClientFromRs(rs));
 
             }
@@ -150,8 +142,6 @@ public class DatabaseSQL {
             ResultSet rs = statement.executeQuery();
             clt = getClientFromRs(rs);
 
-            statement.closeOnCompletion();
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -162,10 +152,10 @@ public class DatabaseSQL {
     public void deleteClt(Client client) {
         String sql = "DELETE FROM Client WHERE id = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                // set the corresponding param
-                ps.setInt(1, client.getId());
-                // execute the delete statement
-                ps.executeUpdate();
+            // set the corresponding param
+            ps.setInt(1, client.getId());
+            // execute the delete statement
+            ps.executeUpdate();
 
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -182,7 +172,7 @@ public class DatabaseSQL {
             ps.setInt(2, client.getPort());
             // execute the delete statement
             ps.setString(3, client.getPseudo());
-            ps.setString(4,client.getPwd());
+            ps.setString(4, client.getPwd());
             ps.setInt(5, client.getId());
             ps.executeUpdate();
 
@@ -193,7 +183,7 @@ public class DatabaseSQL {
     }
 
     public void updateAllClt(List<Client> clients) {
-        for (Client client: clients){
+        for (Client client : clients) {
             updateClt(client);
         }
     }
@@ -212,47 +202,44 @@ public class DatabaseSQL {
 
     private void initNodeTable() {
         String sql = "CREATE TABLE Node (" +
-                "id INTEGER NOT NULL AUTO_INCREMENT, " +
+                "id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
                 "name VARCHAR(255) NOT NULL, " +
                 "masterUser VARCHAR(255) NOT NULL," +
-                "pwd VARCHAR(255)" +
-                "PRIMARY KEY(id))";
+                "pwd VARCHAR(255))";
         try {
             PreparedStatement ps = connection.prepareStatement(sql);
             ps.executeUpdate();
-            ps.closeOnCompletion();
             System.out.println("Node table create");
         } catch (SQLException e) {
-            System.out.println("code: "+e.getErrorCode());
+            System.out.println("code: " + e.getErrorCode());
             // the table already exist
-            if(e.getErrorCode()==42101){
+            if (e.getErrorCode() == 42101) {
                 System.out.println("the table Node already exist");
-            }else
+            } else
                 e.printStackTrace();
         }
 
     }
 
     // Add new client to the database
-    public void newNode(Node node){
-        String sql = "INSERT INTO Node VALUES(" + node.getName()+", "+node.getMasterUser()+", "+node.getPwd()+")";
+    public void newNode(Node node) {
+        String sql = "INSERT INTO Node VALUES(" + node.getName() + ", " + node.getMasterUser() + ", " + node.getPwd() + ")";
         try {
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.executeUpdate();
-            statement.closeOnCompletion();
         } catch (SQLException e) {
             System.out.println("ERROR new node");
             e.printStackTrace();
         }
     }
 
-    public List<Node> getAllNode(){
+    public List<Node> getAllNode() {
         String sql = "SELECT * FROM Node";
         List<Node> list = new LinkedList<>();
         try {
             PreparedStatement st = connection.prepareStatement(sql);
             ResultSet rs = st.executeQuery();
-            while(rs.next()){
+            while (rs.next()) {
                 list.add(getNodeFromRs(rs));
 
             }
@@ -269,8 +256,6 @@ public class DatabaseSQL {
             PreparedStatement statement = connection.prepareStatement(sql);
             ResultSet rs = statement.executeQuery();
             node = getNodeFromRs(rs);
-
-            statement.closeOnCompletion();
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -310,8 +295,8 @@ public class DatabaseSQL {
         }
     }
 
-    public void updateAllNode(List<Node> nodes){
-        for(Node node:nodes){
+    public void updateAllNode(List<Node> nodes) {
+        for (Node node : nodes) {
             updateNode(node);
         }
     }
@@ -326,14 +311,15 @@ public class DatabaseSQL {
         }
         return nodes;
     }
+
     /********************* RS mappers ************************/
 
     private Client getClientFromRs(ResultSet rs) throws SQLException {
-        return  new Client(rs.getInt("id"), rs.getString("ip"),
+        return new Client(rs.getInt("id"), rs.getString("ip"),
                 rs.getInt("port"), rs.getString("pseudo"), rs.getString("pwd"));
     }
 
-    private Node getNodeFromRs(ResultSet rs) throws  SQLException{
+    private Node getNodeFromRs(ResultSet rs) throws SQLException {
         return new Node(rs.getInt("id"), rs.getString("name"), rs.getString("masterUser"));
     }
 

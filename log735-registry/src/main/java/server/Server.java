@@ -20,7 +20,7 @@ public class Server implements Runnable {
     private static final String HB_DOWN = "DOWN";
     private static final String HB_UNSTABLE = "UNSTABLE";
 
-    private static final int MASTER_ELECTION_TIMER = 500000;
+    private static final int MASTER_ELECTION_TIMER = 5000000;
     private static final String MASTER_ELECTION = "ME";
     private static final String MASTER_FIND_MASTER = "FIND_MASTER";
     private static final String INFO_IS_MASTER = "isMaster";
@@ -81,7 +81,7 @@ public class Server implements Runnable {
     private void electMaster() {
         System.out.println("Starting master election");
         try {
-            masterIp = ipAdd;
+            masterIp = "";
             sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER + ":" + String.valueOf(lastBDUpdate));
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -89,17 +89,21 @@ public class Server implements Runnable {
     }
 
     private void setMaster(String ip, int portNb) {
-        this.ipAdd = ip;
-        this.portNb = portNb;
-        boolean preIsMaster = isMaster;
-        isMaster = (ipAdd.equals(masterIp));
-        if (!preIsMaster && isMaster) {
-            try {
-                sendCommandToAllClients(USER_HEATHER + ":" + UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
+        if (!masterIp.equals(ip)){
+            beginTimer = System.currentTimeMillis();
+            this.masterIp = ip;
+            this.masterPort = portNb;
+            System.out.println("New master elected " + masterIp + ":" + String.valueOf(masterPort));
+            isMaster = (ipAdd.equals(masterIp));
+            if (isMaster) {
+                try {
+                    sendCommandToAllClients(USER_HEATHER + ":" + UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
             }
         }
+
     }
 
     private void shutdown() {
@@ -193,17 +197,19 @@ public class Server implements Runnable {
                             }
                             break;
                         case MASTER_ELECTION:
-
+                            gossip = false;
                             switch (msg[1]) {
                                 case MASTER_FIND_MASTER:
-                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(masterIp, masterPort)) {
+                                    if (Utilities.ipToLong(udpMessage.getIp()) > Utilities.ipToLong(this.ipAdd)) {
                                         setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                    }else{
+                                        setMaster(this.ipAdd, this.portNb);
                                     }
                                     NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
                                     updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg[2]));
                                     break;
                                 case INFO_FM_RESPONSE:
-                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(masterIp, masterPort)) {
+                                    if (Utilities.ipToLong(udpMessage.getIp()) > Utilities.ipToLong(masterIp)) {
                                         setMaster(udpMessage.getIp(), udpMessage.getPort());
                                     } else {
                                         setMaster(this.ipAdd, this.portNb);

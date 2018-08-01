@@ -8,7 +8,7 @@ public class UDPMessage {
 
 
     public UDPMessage(String ip, int port, String msg){
-        this.ip = ip;
+        this.ip = ip.replaceAll ("/","");
         this.port = port;
         this.msg = msg;
     }
