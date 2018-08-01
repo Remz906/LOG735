@@ -22,12 +22,14 @@ public class ChatTabs extends TabPane {
         tabs = this.getTabs();
     }
 
-    public static void receiveMessage(String chatName, String sender, String message) {
+    public void receiveMessage(String chatName, String sender, String message) {
         ChatTab chat = getChat(chatName);
 
-        if (chat != null) {
-            chat.addMessage(sender, message);
+        if (chat == null) {
+            chat = new ChatTab(chatName);
+            this.getTabs().add(0, chat);
         }
+        chat.addMessage(sender, message);
     }
 
     public static ChatTab getChat(String name) {
@@ -137,8 +139,6 @@ public class ChatTabs extends TabPane {
         private void sendMessage() {
             String message = this.input.getText().trim();
             if (!"".equals(message)) {
-
-                // TODO: Manage group chat as the master node.
                 RegistryEntry target = RegistryService.getInstance().getRegistry().get(this.getText());
 
                 Message chatMessage = new Message();

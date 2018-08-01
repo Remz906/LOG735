@@ -11,6 +11,7 @@ import client.chat.Message;
 import client.ui.ChatScene;
 import client.ui.LoginScene;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
@@ -52,13 +53,12 @@ public class Client extends Application {
         testUser.setNetAddress("127.0.0.1");
         testUser.setPort(1337);
         reg.save(testUser);
-
+//
 //        RoomBaseEntry testRoom = new RoomBaseEntry();
 //        testRoom.setKey("#test");
 //        testRoom.getMembers().add("@test01");
 //        testRoom.getMembers().add("@test02");
 //        reg.save(testRoom);
-//
 
         // Start the service.
         new MessageReceiver().start();
@@ -121,13 +121,14 @@ public class Client extends Application {
                                                 }
                                             }
                                         }
-                                        ChatScene.receiveMessage(chatMessage.getRecipient(), chatMessage.getSender(), chatMessage.getBody());
+                                        Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getRecipient(), chatMessage.getSender(), chatMessage.getBody()));
                                     } else {
-                                        ChatScene.receiveMessage(chatMessage.getSender(), chatMessage.getSender(), chatMessage.getBody());
+                                        Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getSender(), chatMessage.getSender(), chatMessage.getBody()));
                                     }
                                     break;
 
                                 // Manage message as master node.
+
 
                                 // Manage ACK?
 

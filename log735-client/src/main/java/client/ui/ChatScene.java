@@ -24,7 +24,7 @@ public class ChatScene extends Scene {
 
     public static void receiveMessage(String chat, String sender, String message) {
         if (chatTabs != null) {
-            ChatTabs.receiveMessage(chat, sender, message);
+            chatTabs.receiveMessage(chat, sender, message);
         }
     }
 }
