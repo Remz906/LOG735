@@ -28,7 +28,6 @@ public class DatabaseSQL {
         } catch (Exception e) {
             System.out.println("The connection with de database can't be established");
             e.printStackTrace();
-
         }
     }
 
@@ -97,13 +96,13 @@ public class DatabaseSQL {
 
     // Add new client to the database
     public void newClient(Client client) {
-        String sql = "INSERT INTO Client VALUES(?,?,?,?)"; // + client.getPseudo() + "', '" + client.getIp() + "', " + client.getPort() + ", '" + client.getPwd() + "')";
+        String sql = "INSERT INTO Client(pseudo,ip,port,pwd) VALUES(?,?,?,?)"; // + client.getPseudo() + "', '" + client.getIp() + "', " + client.getPort() + ", '" + client.getPwd() + "')";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, client.getPseudo());
             statement.setString(2, client.getIp());
             statement.setInt(3, client.getPort());
-            statement.setString(4, client.getPseudo());
-            statement.executeUpdate();
+            statement.setString(4, client.getPwd());
+            statement.execute();
         } catch (SQLException e) {
             System.out.println("ERROR newClient");
             e.printStackTrace();
@@ -126,12 +125,14 @@ public class DatabaseSQL {
     }
 
     public Client getClientByPseudo(String pseudo) {
-        String sql = "SELECT FROM Client WHERE pseudo = ?"; // + pseudo;
+        String sql = "SELECT * FROM Client WHERE pseudo = ?"; // + pseudo;
         Client clt = null;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, pseudo);
             try (ResultSet rs = statement.executeQuery()) {
-                clt = getClientFromRs(rs);
+                if (rs.next()) {
+                    clt = getClientFromRs(rs);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -140,14 +141,17 @@ public class DatabaseSQL {
         return clt;
     }
 
-    public Client getClientByIp(String ip) {
-        String sql = "SELECT FROM Client WHERE ip = ?";
+    public Client getClientByInetAddress(String ip, int port) {
+        String sql = "SELECT * FROM Client WHERE ip = ? AND port = ?";
         Client clt = null;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, ip);
+            statement.setInt(2, port);
 
             try (ResultSet rs = statement.executeQuery()) {
-                clt = getClientFromRs(rs);
+                if (rs.next()) {
+                    clt = getClientFromRs(rs);
+                }
             }
 
         } catch (SQLException e) {
@@ -230,7 +234,7 @@ public class DatabaseSQL {
 
     // Add new client to the database
     public void newNode(Node node) {
-        String sql = "INSERT INTO Node VALUES(?,?,?)"; // + node.getName() + ", " + node.getMasterUser() + ", " + node.getPwd() + ")";
+        String sql = "INSERT INTO Node(name,masterUser,pwd) VALUES(?,?,?)"; // + node.getName() + ", " + node.getMasterUser() + ", " + node.getPwd() + ")";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, node.getName());
             statement.setString(2, node.getMasterUser());
@@ -258,13 +262,14 @@ public class DatabaseSQL {
     }
 
     public Node getNodeByName(String name) {
-        String sql = "SELECT FROM Node WHERE name = ?"; // + name;
+        String sql = "SELECT * FROM Node WHERE name = ?"; // + name;
         Node node = null;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, name);
-
             try (ResultSet rs = statement.executeQuery()) {
-                node = getNodeFromRs(rs);
+                if (rs.next()) {
+                    node = getNodeFromRs(rs);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -328,8 +333,6 @@ public class DatabaseSQL {
     }
 
     private Node getNodeFromRs(ResultSet rs) throws SQLException {
-        return new Node(rs.getInt("id"), rs.getString("name"), rs.getString("masterUser"));
+        return new Node(rs.getString("name"), rs.getString("masterUser"), rs.getString("pwd"));
     }
-
-
 }
