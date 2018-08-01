@@ -2,6 +2,7 @@ package arreat.impl.core;
 
 import arreat.api.core.Service;
 import arreat.impl.config.NetConfiguration;
+import arreat.impl.net.NetSocket;
 import arreat.impl.net.Receiver;
 import arreat.impl.net.Sender;
 import arreat.impl.net.UDPMessage;
@@ -39,7 +40,7 @@ public final class NetService implements Service {
         this.receiverService = MoreExecutors.getExitingExecutorService(
                 (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
 
-        this.receiver = new Receiver(new DatagramSocket(portNumber), this.buffer);
+        this.receiver = new Receiver(this.buffer);
         this.receiverService.submit(receiver);
         this.sender = new Sender(3);
     }
@@ -103,6 +104,8 @@ public final class NetService implements Service {
         NetConfiguration cfg = ConfigurationProvider.getGlobalConfig().getNetConfiguration();
 
         this.portNumber = cfg.getReceivingPort();
+        NetSocket.getInstance().init(this.portNumber);
+
         try {
             this.init();
         } catch (SocketException e) {

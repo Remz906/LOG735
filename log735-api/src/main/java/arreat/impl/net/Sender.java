@@ -20,11 +20,12 @@ public class Sender {
 
     public Sender(int poolSize) {
         this.pool = MoreExecutors.getExitingExecutorService(
-                (ThreadPoolExecutor) Executors.newFixedThreadPool(poolSize), 1000, TimeUnit.MILLISECONDS);
+                (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
     }
 
     public void send(DatagramPacket packet) {
-        this.pool.submit(new SendingWorker(packet));
+        NetSocket.getInstance().send(packet);
+//        this.pool.submit(new SendingWorker(packet));
     }
 
     private static class SendingWorker implements Runnable {
@@ -37,20 +38,7 @@ public class Sender {
 
         @Override
         public void run() {
-            try {
-                DatagramSocket socket = new DatagramSocket();
-                socket.send(packet);
-                socket.close();
-
-            } catch (SocketException e) {
-                // Caused by the socket that fail to be created.
-                e.printStackTrace();
-
-            } catch (IOException e) {
-                // Caused by send if it fails.
-
-                e.printStackTrace();
-            }
+            NetSocket.getInstance().send(this.packet);
         }
     }
 }
