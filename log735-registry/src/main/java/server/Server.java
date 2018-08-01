@@ -14,13 +14,13 @@ import java.util.List;
 
 public class Server implements Runnable {
 
-    private static final int HB_TIMER = 10000;
+    private static final int HB_TIMER = 30000;
     private static final String HB_MSG_HEATHER = "HB";
     private static final String HB_OK = "OK";
     private static final String HB_DOWN = "DOWN";
     private static final String HB_UNSTABLE = "UNSTABLE";
 
-    private static final int MASTER_ELECTION_TIMER = 5000000;
+    private static final int MASTER_ELECTION_TIMER = 10000;
     private static final String MASTER_ELECTION = "ME";
     private static final String MASTER_FIND_MASTER = "FIND_MASTER";
     private static final String INFO_IS_MASTER = "isMaster";
@@ -29,7 +29,7 @@ public class Server implements Runnable {
     private long lastBDUpdate; //needed for restore
 
     private static final String USER_HEATHER = "USER";
-    private static final String USER_GET_BY_PSEUDO = "GET_BY_PSEUDO";
+    private static final String USER_GET_BY_USER = "GET_BY_USER";
     private static final String USER_GET_RESPONSE = "GR";
 
     private static final String NODE_HEATHER = "NODE";
@@ -79,7 +79,8 @@ public class Server implements Runnable {
     private void electMaster() {
         System.out.println("Starting master election");
         try {
-            masterIp = "";
+            masterIp = "127.0.0.0";
+            masterPort = 0;
             sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER + ":" + String.valueOf(lastBDUpdate));
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -87,7 +88,7 @@ public class Server implements Runnable {
     }
 
     private void setMaster(String ip, int portNb) {
-        if (!masterIp.equals(ip)){
+        if (!masterIp.equals(ip) || masterPort != portNb){
             beginTimer = System.currentTimeMillis();
             this.masterIp = ip;
             this.masterPort = portNb;
@@ -131,7 +132,7 @@ public class Server implements Runnable {
             while (!shutdownRequested) {
                 try {
                     Thread.sleep(HB_TIMER);
-                    if (masterIp != null && !isMaster) {
+                    if (masterIp != null  && !masterIp.equals("") && !isMaster) {
                         NetService.getInstance().send(masterIp, masterPort, HB_MSG_HEATHER + ":" + HB_OK);
                     }
                 } catch (InterruptedException | UnknownHostException e) {
@@ -153,8 +154,9 @@ public class Server implements Runnable {
 
     private boolean authNode(String name, String pass) {
         Node node = this.db.getNodeByName(name);
-        if (node != null)
+        if (node != null){
             return node.getPwd().equals(pass);
+        }
         return false;
     }
 
@@ -198,7 +200,7 @@ public class Server implements Runnable {
                             gossip = false;
                             switch (msg[1]) {
                                 case MASTER_FIND_MASTER:
-                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
+                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
                                         setMaster(udpMessage.getIp(), udpMessage.getPort());
                                     }
                                     NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
@@ -222,16 +224,20 @@ public class Server implements Runnable {
                             switch (msg[1]) {
                                 case COMMAND_ADD:
                                     clt = gson.fromJson(msg[2], Client.class);
+                                    clt.setIp(udpMessage.getIp());
+                                    clt.setPort(udpMessage.getPort());
                                     if (this.db.getClientByPseudo(clt.getPseudo()) == null) {
                                         this.db.newClient(clt);
                                         this.lastBDUpdate = System.currentTimeMillis();
-                                        this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
+                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
                                     } else {
-                                        //already exist
+                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
                                     }
                                     break;
                                 case COMMAND_UPDATE:
                                     clt = gson.fromJson(msg[2], Client.class);
+                                    clt.setIp(udpMessage.getIp());
+                                    clt.setPort(udpMessage.getPort());
                                     this.db.updateClt(clt);
                                     this.lastBDUpdate = System.currentTimeMillis();
                                     this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
@@ -249,7 +255,7 @@ public class Server implements Runnable {
                                     this.lastBDUpdate = System.currentTimeMillis();
                                     this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
                                     break;
-                                case USER_GET_BY_PSEUDO:
+                                case USER_GET_BY_USER:
                                     clt = this.db.getClientByPseudo(msg[2]);
                                     NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(clt));
                                     break;
@@ -263,7 +269,6 @@ public class Server implements Runnable {
                                     boolean auth = authClt(msg[2], msg[3]);
 
                                     if (auth) {
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Success");
                                         clt = this.db.getClientByPseudo(msg[2]);
 
                                         //update if needed
@@ -271,6 +276,7 @@ public class Server implements Runnable {
                                             clt.setIp(udpMessage.getIp());
                                             clt.setPort(udpMessage.getPort());
                                             this.db.updateClt(clt);
+                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
                                             sendCommandToAllServers(USER_HEATHER + ":" + COMMAND_UPDATE + ":" + gson.toJson(clt));
                                             gossip = false;
                                         }
@@ -312,12 +318,29 @@ public class Server implements Runnable {
                                     NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
                                     break;
                                 case AUTH:
+                                    //2 = roomName 3 = pass
                                     boolean auth = authNode(msg[2], msg[3]);
                                     if (auth) {
                                         node = this.db.getNodeByName(msg[2]);
-                                        clt = this.db.getClientByPseudo(node.getMasterUser());
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
-                                        gossip = false;
+                                        Client masterClt = this.db.getClientByPseudo(node.getMasterUser());
+                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(masterClt));
+
+
+                                        //get new client
+                                        clt = this.db.getClientByIp(udpMessage.getIp());
+
+                                        //should be added to db here
+                                        /////
+
+
+                                        NetService.getInstance().send(masterClt.getIp(), masterClt.getPort(), NODE_HEATHER + ":" + node.getName() + ":" + gson.toJson(clt));
+
+
+                                    } else if (this.db.getNodeByName(msg[2]) == null) {
+                                        clt = this.db.getClientByIp(udpMessage.getIp());
+                                        node = new Node(msg[2], clt.getPseudo(), msg[3]);
+                                        this.db.newNode(node);
+                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + "CREATED" + ":" + msg[2]);
                                     } else {
                                         NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
                                     }
@@ -341,7 +364,8 @@ public class Server implements Runnable {
                     Thread.sleep(1000);
                 }
 
-                if (System.currentTimeMillis() - beginTimer >= MASTER_ELECTION_TIMER) {
+                if (System.currentTimeMillis() - beginTimer >= MASTER_ELECTION_TIMER ||
+                        (udpMessage != null && Utilities.ipAndPortToLong(this.masterIp, this.masterPort) < Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()))) {
                     System.out.println("master connection lost");
                     electMaster();
                 }

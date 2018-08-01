@@ -10,6 +10,12 @@ public class Node implements Serializable {
     private String masterUser;
     private String pwd;
 
+    public Node(String name, String masterUser, String pwd){
+        this.name = name;
+        this.masterUser = masterUser;
+        this.pwd = pwd;
+    }
+
     public Node(int id, String name, String masterUser) {
         this.id = id;
         this.name = name;

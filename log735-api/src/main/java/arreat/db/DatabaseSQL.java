@@ -149,6 +149,21 @@ public class DatabaseSQL {
         return clt;
     }
 
+    public Client getClientByIp(String ip) {
+        String sql = "SELECT FROM Client WHERE ip =" + ip;
+        Client clt = null;
+        try {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet rs = statement.executeQuery();
+            clt = getClientFromRs(rs);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return clt;
+    }
+
     public void deleteClt(Client client) {
         String sql = "DELETE FROM Client WHERE id = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {

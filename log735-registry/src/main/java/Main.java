@@ -18,6 +18,7 @@ public class Main {
         listOfServers.add(new Pair<>("127.0.0.1", 9080));
         listOfServers.add(new Pair<>("127.0.0.1", 9081));
         listOfServers.add(new Pair<>("127.0.0.1", 9082));
+        NetService.getInstance().configure();
 
         NetService.getInstance().configure();
 
@@ -33,7 +34,7 @@ public class Main {
 //                server = new Server(9081, LOCAL_HOST, listOfServers);
 //                break;
 //        }
-        server = new Server(9080,"127.0.0.1", listOfServers);
+        server = new Server(9082,"127.0.0.1", listOfServers);
 
         if (server != null) {
             boolean shutdown = false;
