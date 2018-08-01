@@ -11,8 +11,12 @@ import com.google.gson.Gson;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Server implements Runnable {
+
+    private static final Pattern MSG_PATTERN;
 
     private static final int HB_TIMER = 30000;
     private static final String HB_MSG_HEATHER = "HB";
@@ -185,199 +189,219 @@ public class Server implements Runnable {
 
 
                     Gson gson = new Gson();
-                    String[] msg = udpMessage.getMsg().split(":");
+                    Matcher msg = MSG_PATTERN.matcher(udpMessage.getMsg()); //.split(":");
                     gossip = true;
-                    switch (msg[0]) {
+                    if (msg.matches()) {
+                        switch (msg.group(1)) {
 
-                        case HB_MSG_HEATHER:
-                            if (HB_OK.equals(msg[1])) {
-                                sendACK(udpMessage.getIp(), udpMessage.getPort(), HB_MSG_HEATHER);
-                            } else if ("ACK".equals(msg[1])) {
-                                beginTimer = System.currentTimeMillis();
-                            }
-                            break;
-                        case MASTER_ELECTION:
-                            gossip = false;
-                            switch (msg[1]) {
-                                case MASTER_FIND_MASTER:
-                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                        setMaster(udpMessage.getIp(), udpMessage.getPort());
+                            case HB_MSG_HEATHER:
+                                if (HB_OK.equals(msg.group(2))) {
+                                    sendACK(udpMessage.getIp(), udpMessage.getPort(), HB_MSG_HEATHER);
+                                } else if ("ACK".equals(msg.group(2))) {
+                                    beginTimer = System.currentTimeMillis();
+                                }
+                                break;
+
+                            case MASTER_ELECTION:
+                                gossip = false;
+                                msg = MSG_PATTERN.matcher(msg.group(2));
+
+                                if (msg.matches()) {
+                                    switch (msg.group(1)) {
+                                        case MASTER_FIND_MASTER:
+                                            if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
+                                                setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                            }
+                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
+                                            updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
+                                            break;
+                                        case INFO_FM_RESPONSE:
+                                            if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
+                                                setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                            } else {
+                                                setMaster(this.ipAdd, this.portNb);
+                                            }
+                                            updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
+                                            break;
+
                                     }
-                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
-                                    updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg[2]));
-                                    break;
-                                case INFO_FM_RESPONSE:
-                                    if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
-                                        setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                    } else {
-                                        setMaster(this.ipAdd, this.portNb);
-                                    }
-                                    updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg[2]));
-                                    break;
+                                }
+                                break;
 
-                            }
-                            break;
-                        case USER_HEATHER:
+                            case USER_HEATHER:
+                                msg = MSG_PATTERN.matcher(msg.group(2));
+                                Client clt;
+                                List<Client> cltList;
 
-                            Client clt;
-                            List<Client> cltList;
-                            switch (msg[1]) {
-                                case COMMAND_ADD:
-                                    clt = gson.fromJson(msg[2], Client.class);
-                                    clt.setIp(udpMessage.getIp());
-                                    clt.setPort(udpMessage.getPort());
-                                    if (this.db.getClientByPseudo(clt.getPseudo()) == null) {
-                                        this.db.newClient(clt);
-                                        this.lastBDUpdate = System.currentTimeMillis();
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
-                                    } else {
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
-                                    }
-                                    break;
-                                case COMMAND_UPDATE:
-                                    clt = gson.fromJson(msg[2], Client.class);
-                                    clt.setIp(udpMessage.getIp());
-                                    clt.setPort(udpMessage.getPort());
-                                    this.db.updateClt(clt);
-                                    this.lastBDUpdate = System.currentTimeMillis();
-                                    this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
-                                    break;
-                                case COMMAND_UPDATE_ALL:
-                                    cltList = gson.fromJson(msg[3], new TypeToken<List<Client>>() {
-                                    }.getType());
-                                    this.db.updateAllClt(cltList);
-                                    this.lastBDUpdate = System.currentTimeMillis();
-                                    this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
-                                    break;
-                                case COMMAND_DELETE:
-                                    clt = gson.fromJson(msg[2], Client.class);
-                                    this.db.deleteClt(clt);
-                                    this.lastBDUpdate = System.currentTimeMillis();
-                                    this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
-                                    break;
-                                case USER_GET_BY_USER:
-                                    clt = this.db.getClientByPseudo(msg[2]);
-                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(clt));
-                                    break;
-                                case COMMAND_GET_BY_USERNAMES:
-                                    List<String> cltNameList = gson.fromJson(msg[3], new TypeToken<List<String>>() {
-                                    }.getType());
-                                    cltList = this.db.getCltsByUsername(cltNameList);
-                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + COMMAND_GET_BY_USERNAMES + ":" + gson.toJson(cltList));
-                                    break;
-                                case AUTH:
-                                    boolean auth = authClt(msg[2], msg[3]);
-
-                                    if (auth) {
-                                        clt = this.db.getClientByPseudo(msg[2]);
-
-                                        //update if needed
-                                        if (!(clt.getIp().equals(udpMessage.getIp()) && clt.getPort() == udpMessage.getPort())) {
+                                if (msg.matches()) {
+                                    switch (msg.group(1)) {
+                                        case COMMAND_ADD:
+                                            clt = gson.fromJson(msg.group(2), Client.class);
+                                            clt.setIp(udpMessage.getIp());
+                                            clt.setPort(udpMessage.getPort());
+                                            if (this.db.getClientByPseudo(clt.getPseudo()) == null) {
+                                                this.db.newClient(clt);
+                                                this.lastBDUpdate = System.currentTimeMillis();
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
+                                            } else {
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
+                                            }
+                                            break;
+                                        case COMMAND_UPDATE:
+                                            clt = gson.fromJson(msg.group(2), Client.class);
                                             clt.setIp(udpMessage.getIp());
                                             clt.setPort(udpMessage.getPort());
                                             this.db.updateClt(clt);
-                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
-                                            sendCommandToAllServers(USER_HEATHER + ":" + COMMAND_UPDATE + ":" + gson.toJson(clt));
-                                            gossip = false;
+                                            this.lastBDUpdate = System.currentTimeMillis();
+                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
+                                            break;
+                                        case COMMAND_UPDATE_ALL:
+                                            cltList = gson.fromJson(msg.group(2), new TypeToken<List<Client>>() {
+                                            }.getType());
+                                            this.db.updateAllClt(cltList);
+                                            this.lastBDUpdate = System.currentTimeMillis();
+                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
+                                            break;
+                                        case COMMAND_DELETE:
+                                            clt = gson.fromJson(msg.group(2), Client.class);
+                                            this.db.deleteClt(clt);
+                                            this.lastBDUpdate = System.currentTimeMillis();
+                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
+                                            break;
+                                        case USER_GET_BY_USER:
+                                            clt = this.db.getClientByPseudo(msg.group(2));
+                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(clt));
+                                            break;
+                                        case COMMAND_GET_BY_USERNAMES:
+                                            List<String> cltNameList = gson.fromJson(msg.group(2), new TypeToken<List<String>>() {
+                                            }.getType());
+                                            cltList = this.db.getCltsByUsername(cltNameList);
+                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + COMMAND_GET_BY_USERNAMES + ":" + gson.toJson(cltList));
+                                            break;
+
+                                        case AUTH:
+                                            String[] msgSplit = msg.group(2).split(":");
+
+                                            boolean auth = authClt(msgSplit[0], msgSplit[1]);
+
+                                            if (auth) {
+                                                clt = this.db.getClientByPseudo(msgSplit[0]);
+
+                                                //update if needed
+                                                if (!(clt.getIp().equals(udpMessage.getIp()) && clt.getPort() == udpMessage.getPort())) {
+                                                    clt.setIp(udpMessage.getIp());
+                                                    clt.setPort(udpMessage.getPort());
+                                                    this.db.updateClt(clt);
+                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
+                                                    sendCommandToAllServers(USER_HEATHER + ":" + COMMAND_UPDATE + ":" + gson.toJson(clt));
+                                                    gossip = false;
+                                                }
+
+                                            } else {
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
+                                            }
+                                            break;
+                                    }
+                                }
+                                break;
+
+                                case NODE_HEATHER:
+                                    Node node;
+                                    msg = MSG_PATTERN.matcher(msg.group(2));
+
+                                    if (msg.matches()) {
+
+                                        switch (msg.group(1)) {
+                                            case COMMAND_ADD:
+                                                node = gson.fromJson(msg.group(2), Node.class);
+                                                this.db.newNode(node);
+                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                                break;
+                                            case COMMAND_UPDATE:
+                                                node = gson.fromJson(msg.group(2), Node.class);
+                                                this.db.updateNode(node);
+                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                                break;
+                                            case COMMAND_UPDATE_ALL:
+                                                List<Node> nodeList = gson.fromJson(msg.group(2), new TypeToken<List<Node>>() {
+                                                }.getType());
+                                                this.db.updateAllNode(nodeList);
+                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                                break;
+                                            case COMMAND_DELETE:
+                                                node = gson.fromJson(msg.group(2), Node.class);
+                                                this.db.deleteNode(node);
+                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                                break;
+                                            case NODE_GET_BY_NAME:
+                                                node = this.db.getNodeByName(msg.group(2));
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
+                                                break;
+                                            case AUTH:
+                                                //2 = roomName 3 = pass
+                                                String[] msgSplit = msg.group(2).split(":");
+
+                                                boolean auth = authNode(msgSplit[0], msgSplit[1]);
+                                                if (auth) {
+                                                    node = this.db.getNodeByName(msgSplit[0]);
+                                                    Client masterClt = this.db.getClientByPseudo(node.getMasterUser());
+                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(masterClt));
+
+
+                                                    //get new client
+                                                    clt = this.db.getClientByIp(udpMessage.getIp());
+
+                                                    //should be added to db here
+                                                    /////
+
+
+                                                    NetService.getInstance().send(masterClt.getIp(), masterClt.getPort(), NODE_HEATHER + ":" + node.getName() + ":" + gson.toJson(clt));
+
+
+                                                } else if (this.db.getNodeByName(msgSplit[0]) == null) {
+                                                    clt = this.db.getClientByIp(udpMessage.getIp());
+                                                    node = new Node(msgSplit[0], clt.getPseudo(), msgSplit[1]);
+                                                    this.db.newNode(node);
+                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + "CREATED" + ":" + msgSplit[0]);
+                                                } else {
+                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
+                                                }
+
+                                                break;
+
                                         }
-
-                                    } else {
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
                                     }
-                                    break;
-                            }
-
-                            break;
-
-                        case NODE_HEATHER:
-                            Node node;
-                            switch (msg[1]) {
-                                case COMMAND_ADD:
-                                    node = gson.fromJson(msg[2], Node.class);
-                                    this.db.newNode(node);
-                                    this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                    break;
-                                case COMMAND_UPDATE:
-                                    node = gson.fromJson(msg[2], Node.class);
-                                    this.db.updateNode(node);
-                                    this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                    break;
-                                case COMMAND_UPDATE_ALL:
-                                    List<Node> nodeList = gson.fromJson(msg[3], new TypeToken<List<Node>>() {
-                                    }.getType());
-                                    this.db.updateAllNode(nodeList);
-                                    this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                    break;
-                                case COMMAND_DELETE:
-                                    node = gson.fromJson(msg[2], Node.class);
-                                    this.db.deleteNode(node);
-                                    this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                    break;
-                                case NODE_GET_BY_NAME:
-                                    node = this.db.getNodeByName(msg[2]);
-                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
-                                    break;
-                                case AUTH:
-                                    //2 = roomName 3 = pass
-                                    boolean auth = authNode(msg[2], msg[3]);
-                                    if (auth) {
-                                        node = this.db.getNodeByName(msg[2]);
-                                        Client masterClt = this.db.getClientByPseudo(node.getMasterUser());
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(masterClt));
-
-
-                                        //get new client
-                                        clt = this.db.getClientByIp(udpMessage.getIp());
-
-                                        //should be added to db here
-                                        /////
-
-
-                                        NetService.getInstance().send(masterClt.getIp(), masterClt.getPort(), NODE_HEATHER + ":" + node.getName() + ":" + gson.toJson(clt));
-
-
-                                    } else if (this.db.getNodeByName(msg[2]) == null) {
-                                        clt = this.db.getClientByIp(udpMessage.getIp());
-                                        node = new Node(msg[2], clt.getPseudo(), msg[3]);
-                                        this.db.newNode(node);
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + "CREATED" + ":" + msg[2]);
-                                    } else {
-                                        NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
-                                    }
-
+                                    this.lastBDUpdate = System.currentTimeMillis();
                                     break;
 
-                            }
-                            this.lastBDUpdate = System.currentTimeMillis();
-                            break;
+                                }
+                        }
 
 
+                        //propagate throughout the network
+                        if (isMaster && gossip) {
+                            sendCommandToAllServers(udpMessage.getMsg());
+                        }
+                    } else {
+                        System.out.println("no msg received");
+                        Thread.sleep(1000);
                     }
 
-
-                    //propagate throughout the network
-                    if (isMaster && gossip) {
-                        sendCommandToAllServers(udpMessage.getMsg());
+                    if (System.currentTimeMillis() - beginTimer >= MASTER_ELECTION_TIMER ||
+                            (udpMessage != null && Utilities.ipAndPortToLong(this.masterIp, this.masterPort) < Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()))) {
+                        System.out.println("master connection lost");
+                        electMaster();
                     }
-                } else {
-                    System.out.println("no msg received");
-                    Thread.sleep(1000);
-                }
 
-                if (System.currentTimeMillis() - beginTimer >= MASTER_ELECTION_TIMER ||
-                        (udpMessage != null && Utilities.ipAndPortToLong(this.masterIp, this.masterPort) < Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()))) {
-                    System.out.println("master connection lost");
-                    electMaster();
                 }
-
+            } catch(Exception e){
+                System.out.println(e);
+            } finally{
+                shutdown();
             }
-
-        } catch (Exception e) {
-            System.out.println(e);
-        } finally {
-            shutdown();
-        }
-
     }
 
+    static {
+        MSG_PATTERN = Pattern.compile("(\\w+):(.+)");
+    }
 }

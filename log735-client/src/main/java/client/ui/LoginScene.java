@@ -53,6 +53,9 @@ public class LoginScene extends Scene {
                 NetService.getInstance().send(
                         RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
                         String.format("USER:ADD:%s", c.toString()));
+
+                username.setText("");
+                password.setText("");
             });
 
             this.add(USERNAME_LABEL, 1, 1);
