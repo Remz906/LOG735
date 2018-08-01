@@ -32,7 +32,7 @@ public class Main {
 //                server = new Server(9081, LOCAL_HOST, listOfServers);
 //                break;
 //        }
-        server = new Server(NetService.getInstance().getPortNumber(),"127.0.0.1", listOfServers);
+        server = new Server(9086,"127.0.0.1", listOfServers);
 
         if (server != null) {
             boolean shutdown = false;
