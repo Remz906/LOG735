@@ -92,7 +92,7 @@ public class ChatTabs extends TabPane {
                 String chatRoomName = chatName.getText().trim();
                 String pwd = password.getText();
 
-                if (!"".equals(chatRoomName) && pwd.equals("") && !chatExist(chatRoomName)) {
+                if (!"".equals(chatRoomName) && !pwd.equals("") && !chatExist(chatRoomName)) {
                     RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatRoomName);
 
                     if (entry == null) {
