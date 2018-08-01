@@ -1,6 +1,5 @@
 package client;
 
-import arreat.api.registry.Registry;
 import arreat.api.registry.RegistryEntry;
 import arreat.impl.core.NetService;
 import arreat.impl.core.RegistryService;
@@ -9,13 +8,17 @@ import arreat.impl.registry.BaseEntry;
 import arreat.impl.registry.RoomBaseEntry;
 import client.chat.Message;
 import client.ui.ChatScene;
+import client.ui.ChatTabs;
 import client.ui.LoginScene;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.net.SocketException;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -67,7 +70,7 @@ public class Client extends Application {
     }
 
     @Override
-    public void start(Stage stage) throws Exception {
+    public void start(Stage stage) {
         primaryStage  = stage;
         switchScene(new LoginScene(), "Login");
     }
@@ -95,106 +98,193 @@ public class Client extends Application {
                     try {
                         UDPMessage udpMessage = NetService.getInstance().receive();
 
-                        Matcher msg = MSG_PATTERN.matcher(udpMessage.getMsg());
+                        if (udpMessage != null) {
+                            Matcher msg = MSG_PATTERN.matcher(udpMessage.getMsg());
 
-                        // TODO: Implement stuff....
-                        if (msg.matches()) {
-                            switch (msg.group(1)) {
+                            if (msg.matches()) {
+                                switch (msg.group(1)) {
 
-                                // Message from remote registry.
-                                case "USER":
-                                    msg = MSG_PATTERN.matcher(msg.group(2));
+                                    // Message from remote registry.
+                                    case "USER":
+                                        msg = MSG_PATTERN.matcher(msg.group(2));
 
-                                    if (msg.matches()) {
-                                        switch(msg.group(1)) {
+                                        if (msg.matches()) {
+                                            switch (msg.group(1)) {
 
-                                            // Manage Response for auth/login.
-                                            case "AUTH":
-                                                if (!"fail".equalsIgnoreCase(msg.group(2))) {
-                                                    arreat.db.Client c = arreat.db.Client.fromJson(msg.group(2));
+                                                // Manage Response for auth/login.
+                                                case "AUTH":
+                                                    if (!"fail".equalsIgnoreCase(msg.group(2))) {
+                                                        arreat.db.Client c = arreat.db.Client.fromJson(msg.group(2));
 
-                                                    RegistryEntry entry = RegistryService.getInstance().getRegistry().get(c.getPseudo());
+                                                        RegistryEntry entry = RegistryService.getInstance().getRegistry().get(c.getPseudo());
 
-                                                    if (entry == null) {
-                                                        entry = new BaseEntry();
-                                                        ((BaseEntry) entry).setKey(c.getPseudo());
+                                                        if (entry == null) {
+                                                            entry = new BaseEntry();
+                                                            ((BaseEntry) entry).setKey(c.getPseudo());
+                                                        }
+                                                        ((BaseEntry) entry).setNetAddress(c.getIp());
+                                                        ((BaseEntry) entry).setPort(c.getPort());
+                                                        RegistryService.getInstance().getRegistry().save(entry);
+                                                        RegistryService.getInstance().getRegistry().setSelf(entry);
+
+                                                        final String username = entry.getKey();
+                                                        Platform.runLater(() -> switchScene(new ChatScene(), String.format("Chat - %s", username)));
+                                                    }
+                                                    break;
+
+                                                // Manage the refresh info response.
+                                                case "GET_BY_USERNAMES":
+                                                    List<arreat.db.Client> clients = new Gson().fromJson(msg.group(2),
+                                                            new TypeToken<List<arreat.db.Client>>() {
+                                                            }.getType());
+
+                                                    for (arreat.db.Client c : clients) {
+                                                        RegistryEntry entry = RegistryService.getInstance().getRegistry().get(c.getPseudo());
+
+                                                        if (entry == null) {
+                                                            entry = new BaseEntry();
+                                                            ((BaseEntry) entry).setKey(c.getPseudo());
+
+                                                        }
+                                                        ((BaseEntry) entry).setNetAddress(c.getIp());
+                                                        ((BaseEntry) entry).setPort(c.getPort());
+                                                        RegistryService.getInstance().getRegistry().save(entry);
+
+                                                        String username = entry.getKey();
+
+                                                        if (!ChatTabs.chatExist(entry.getKey())) {
+                                                            Platform.runLater(() -> ChatTabs.createChat(username));
+                                                        }
 
                                                     }
-                                                    ((BaseEntry) entry).setNetAddress(c.getIp());
-                                                    ((BaseEntry) entry).setPort(c.getPort());
-                                                    RegistryService.getInstance().getRegistry().setSelf(entry);
-
-                                                    final String username = entry.getKey();
-                                                    Platform.runLater(() -> switchScene(new ChatScene(), String.format("Chat - %s", username)));
-                                                }
-                                                break;
-                                        }
-                                    }
-
-                                // Manage chat messages.
-                                case "CMSG":
-                                    Message chatMessage = Message.fromJson(msg.group(2));
-
-                                    // If it's not a message for us, it means it's a chat room.
-                                    if (!RegistryService.getInstance().getRegistry().isSelf(chatMessage.getRecipient())) {
-                                        RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatMessage.getRecipient());
-
-                                        // If not found (means null and non instanceof, it means we're not
-                                        // the master node.
-                                        if (entry instanceof RoomBaseEntry) {
-                                            for (String member : ((RoomBaseEntry) entry).getMembers()) {
-                                                if (!RegistryService.getInstance().getRegistry().isSelf(member) && !member.equals(chatMessage.getSender())) {
-                                                    RegistryEntry e = RegistryService.getInstance().getRegistry().get(member);
-                                                    NetService.getInstance().send(e.getAddress(), msg.group(0));
-                                                }
+                                                    break;
                                             }
-                                            // Make sure we have an entry for the chat room if not we create it.
-                                        } else if (entry == null) {
-                                            entry = new BaseEntry();
-                                            ((BaseEntry) entry).setKey(chatMessage.getRecipient());
-                                            ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
-                                            ((BaseEntry) entry).setPort(udpMessage.getPort());
+                                        }
 
+                                    case "NODE":
+                                        msg = MSG_PATTERN.matcher(msg.group(2));
+
+                                        if (msg.matches()) {
+                                            switch (msg.group(1)) {
+                                                case "AUTH":
+                                                    if (!"fail".equalsIgnoreCase(msg.group(2))) {
+                                                        arreat.db.Client c = arreat.db.Client.fromJson(msg.group(2));
+
+                                                        RegistryEntry entry = RegistryService.getInstance().getRegistry().get(c.getPseudo());
+
+                                                        if (entry == null) {
+                                                            entry = new BaseEntry();
+                                                            ((BaseEntry) entry).setKey(c.getPseudo());
+                                                        }
+
+                                                        ((BaseEntry) entry).setNetAddress(c.getIp());
+                                                        ((BaseEntry) entry).setPort(c.getPort());
+                                                        RegistryService.getInstance().getRegistry().save(entry);
+
+                                                        String roomName = entry.getKey();
+
+                                                        if (!ChatTabs.chatExist(roomName)) {
+                                                            Platform.runLater(() -> ChatTabs.createChat(roomName));
+                                                        }
+                                                    }
+                                                    // JSON CLIENT.
+                                                    break;
+
+                                                case "CREATED":
+                                                    RoomBaseEntry room = new RoomBaseEntry();
+
+                                                    String roomName = msg.group(2);
+
+                                                    room.setKey(roomName);
+                                                    RegistryService.getInstance().getRegistry().save(room);
+
+                                                    if (!ChatTabs.chatExist(roomName)) {
+                                                        Platform.runLater(() -> ChatTabs.createChat(roomName));
+                                                    }
+                                                    break;
+
+                                                default:
+                                                    RegistryEntry roomEntry = RegistryService.getInstance().getRegistry().get(msg.group(1));
+
+                                                    if (roomEntry instanceof RoomBaseEntry) {
+                                                        arreat.db.Client c = arreat.db.Client.fromJson(msg.group(2));
+
+                                                        RegistryEntry entry = RegistryService.getInstance().getRegistry().get(c.getPseudo());
+
+                                                        if (entry == null) {
+                                                            entry = new BaseEntry();
+                                                            ((BaseEntry) entry).setKey(c.getPseudo());
+                                                        }
+                                                        ((BaseEntry) entry).setNetAddress(c.getIp());
+                                                        ((BaseEntry) entry).setPort(c.getPort());
+                                                        RegistryService.getInstance().getRegistry().save(entry);
+
+                                                        if (!((RoomBaseEntry) roomEntry).getMembers().contains(entry.getKey())) {
+                                                            ((RoomBaseEntry) roomEntry).getMembers().add(entry.getKey());
+                                                        }
+                                                    }
+                                                    break;
+                                            }
+                                        }
+                                        break;
+
+                                    // Manage chat messages.
+                                    case "CMSG":
+                                        Message chatMessage = Message.fromJson(msg.group(2));
+
+                                        // If it's not a message for us, it means it's a chat room.
+                                        if (!RegistryService.getInstance().getRegistry().isSelf(chatMessage.getRecipient())) {
+                                            RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatMessage.getRecipient());
+
+                                            // If not found (means null and non instanceof, it means we're not
+                                            // the master node.
+                                            if (entry instanceof RoomBaseEntry) {
+                                                for (String member : ((RoomBaseEntry) entry).getMembers()) {
+                                                    if (!RegistryService.getInstance().getRegistry().isSelf(member) && !member.equals(chatMessage.getSender())) {
+                                                        RegistryEntry e = RegistryService.getInstance().getRegistry().get(member);
+                                                        NetService.getInstance().send(e.getAddress(), msg.group(0));
+                                                    }
+                                                }
+                                                // Make sure we have an entry for the chat room if not we create it.
+                                            } else if (entry == null) {
+                                                entry = new BaseEntry();
+                                                ((BaseEntry) entry).setKey(chatMessage.getRecipient());
+                                                ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
+                                                ((BaseEntry) entry).setPort(udpMessage.getPort());
+
+                                                RegistryService.getInstance().getRegistry().save(entry);
+                                            }
+
+                                            // Detach, this will be run the FX Application thread otherwise we can't modify the UI.
+                                            Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getRecipient(), chatMessage.getSender(), chatMessage.getBody()));
+
+                                            // Simple one to one message.
+                                        } else {
+                                            RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatMessage.getSender());
+
+                                            // Update the information of the sender.
+                                            if (entry instanceof BaseEntry) {
+                                                ((BaseEntry) entry).setPort(udpMessage.getPort());
+                                                ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
+
+                                                // Create a new entry for the sender.
+                                            } else if (entry == null) {
+                                                entry = new BaseEntry();
+                                                ((BaseEntry) entry).setKey(chatMessage.getSender());
+                                                ((BaseEntry) entry).setPort(udpMessage.getPort());
+                                                ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
+                                            }
                                             RegistryService.getInstance().getRegistry().save(entry);
+
+                                            // Detach, this will be run the FX Application thread otherwise we can't modify the UI.
+                                            Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getSender(), chatMessage.getSender(), chatMessage.getBody()));
                                         }
-
-                                        // Detach, this will be run the FX Application thread otherwise we can't modify the UI.
-                                        Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getRecipient(), chatMessage.getSender(), chatMessage.getBody()));
-
-                                        // Simple one to one message.
-                                    } else {
-                                        RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatMessage.getSender());
-
-                                        // Update the information of the sender.
-                                        if (entry instanceof BaseEntry) {
-                                            ((BaseEntry) entry).setPort(udpMessage.getPort());
-                                            ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
-
-                                            // Create a new entry for the sender.
-                                        } else if (entry == null) {
-                                            entry = new BaseEntry();
-                                            ((BaseEntry) entry).setKey(chatMessage.getSender());
-                                            ((BaseEntry) entry).setPort(udpMessage.getPort());
-                                            ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
-                                        }
-                                        RegistryService.getInstance().getRegistry().save(entry);
-
-                                        // Detach, this will be run the FX Application thread otherwise we can't modify the UI.
-                                        Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getSender(), chatMessage.getSender(), chatMessage.getBody()));
-                                    }
-                                    break;
-
-
-
-                                // Manage ACK?
-
-                                // Manage registry refresh.
-
-                                default:
-                                    // No default.
+                                        break;
+                                    default:
+                                        // No default.
+                                }
                             }
                         }
-
                     } catch (Exception e) {
 
                     }

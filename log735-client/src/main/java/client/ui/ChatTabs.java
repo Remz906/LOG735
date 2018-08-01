@@ -5,11 +5,13 @@ import arreat.impl.core.NetService;
 import arreat.impl.core.RegistryService;
 import arreat.impl.registry.RoomBaseEntry;
 import client.chat.Message;
+import com.google.gson.Gson;
 import javafx.geometry.Side;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ChatTabs extends TabPane {
@@ -20,6 +22,10 @@ public class ChatTabs extends TabPane {
         this.setSide(Side.LEFT);
         this.getTabs().add(new JoinTab());
         tabs = this.getTabs();
+    }
+
+    public static void createChat(String username) {
+        tabs.add(0, new ChatTab(username));
     }
 
     public void receiveMessage(String chatName, String sender, String message) {
@@ -56,6 +62,7 @@ public class ChatTabs extends TabPane {
         private final PasswordField password;
 
         private final Button joinButton;
+        private final Button createButton;
 
         private JoinTab() {
             GridPane pane = new GridPane();
@@ -63,13 +70,39 @@ public class ChatTabs extends TabPane {
             this.chatName = new TextField();
             this.password = new PasswordField();
 
-            this.joinButton = new Button("Join");
+            this.joinButton = new Button("Chat with user");
             this.joinButton.setOnMouseClicked(event -> {
                 String recipient = chatName.getText().trim();
 
-                if (!"".equals(recipient) && !chatExist(recipient) && join(recipient)) {
-                    addTab(recipient);
+                if (!"".equals(recipient) && !chatExist(recipient)) {
+                    RegistryEntry entry = RegistryService.getInstance().getRegistry().get(recipient);
+
+                    if (entry == null) {
+                        NetService.getInstance().send(RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
+                                String.format("USER:GET_BY_USERNAMES:%s", new Gson().toJson(Collections.singleton(recipient))));
+                    } else {
+                        addTab(recipient);
+                    }
                     chatName.setText("");
+                }
+            });
+
+            this.createButton = new Button("Create or Join Chat Room");
+            this.createButton.setOnMouseClicked(event -> {
+                String chatRoomName = chatName.getText().trim();
+                String pwd = password.getText();
+
+                if (!"".equals(chatRoomName) && pwd.equals("") && !chatExist(chatRoomName)) {
+                    RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatRoomName);
+
+                    if (entry == null) {
+                        NetService.getInstance().send(RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
+                                String.format("NODE:AUTH:%s:%s", chatRoomName, pwd));
+                    } else {
+                        addTab(chatRoomName);
+                    }
+                    chatName.setText("");
+                    password.setText("");
                 }
             });
 
@@ -79,7 +112,8 @@ public class ChatTabs extends TabPane {
             pane.add(this.chatName, 2, 1);
             pane.add(this.password, 2, 2);
 
-            pane.add(this.joinButton, 1,3,2,1);
+            pane.add(this.joinButton, 1,3);
+            pane.add(this.createButton, 2, 3);
 
             this.setContent(pane);
             this.setText("(+)");
@@ -97,7 +131,7 @@ public class ChatTabs extends TabPane {
 
         static {
             JOIN_LABEL = new Label("Direct Chat or Join a Channel");
-            PASSWORD_LABEL = new Label("Password (optional)");
+            PASSWORD_LABEL = new Label("Password (for chat room)");
         }
     }
 
