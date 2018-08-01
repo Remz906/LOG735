@@ -1,5 +1,5 @@
 netConfiguration:
-  receivingPort: 1338
+  receivingPort: 1337
 
 registryConfiguration:
   type: "arreat.impl.registry.CacheRegistry"
@@ -7,4 +7,4 @@ registryConfiguration:
     - key: "@remote01"
       displayName: "Remote 01"
       netAddress: "127.0.0.1"
-      port: 60000
+      port: 9081

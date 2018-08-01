@@ -1,6 +1,7 @@
 package client.ui;
 
 import arreat.impl.core.NetService;
+import arreat.impl.core.RegistryService;
 import client.Client;
 import client.core.LoginService;
 import javafx.geometry.Insets;
@@ -38,12 +39,21 @@ public class LoginScene extends Scene {
 
             this.loginButton = new Button("Login");
             this.loginButton.setOnMouseClicked(event -> {
-                Client.switchScene(new ChatScene(), "Chat");
+                arreat.db.Client c = new arreat.db.Client(username.getText(), password.getText());
+
+                NetService.getInstance().send(
+                        RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
+                        String.format("USER:AUTH:%s", c.toString()));
             });
 
             this.registerButton = new Button("Register");
-            this.registerButton.setOnMouseClicked(event ->
-                    LoginService.getInstance().register(username.getText(), password.getText()));
+            this.registerButton.setOnMouseClicked(event -> {
+                arreat.db.Client c = new arreat.db.Client(username.getText(), password.getText());
+
+                NetService.getInstance().send(
+                        RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
+                        String.format("USER:ADD:%s", c.toString()));
+            });
 
             this.add(USERNAME_LABEL, 1, 1);
             this.add(this.username, 2, 1);
@@ -53,19 +63,6 @@ public class LoginScene extends Scene {
 
             this.add(this.loginButton, 1, 3);
             this.add(this.registerButton, 2, 3);
-        }
-
-//        private boolean login() {
-//            return LoginService.getInstance().login(this.username.getText(), this.password.getText());
-//        }
-
-        private boolean register() {
-            // TODO: Implement.
-            return true;
-        }
-
-        private void switchScene() {
-            Client.switchScene(new ChatScene(), "Chat");
         }
 
         static {

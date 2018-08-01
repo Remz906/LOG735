@@ -31,28 +31,28 @@ public class Client extends Application {
         RegistryService.getInstance().configure();
 
         // TODO: Remove once test is done.
-        Registry reg = RegistryService.getInstance().getRegistry();
-        BaseEntry testUser = new BaseEntry();
-        testUser.setKey("@test01");
-        testUser.setNetAddress("127.0.0.1");
-        testUser.setPort(1337);
+//        Registry reg = RegistryService.getInstance().getRegistry();
+//        BaseEntry testUser = new BaseEntry();
+//        testUser.setKey("@test01");
+//        testUser.setNetAddress("127.0.0.1");
+//        testUser.setPort(1337);
+//
+//        reg.setSelf(testUser);
+//        reg.save(testUser);
+//
+//        testUser = new BaseEntry();
+//        testUser.setKey("@test02");
+//        testUser.setNetAddress("127.0.0.1");
+//        testUser.setPort(1338);
 
 //        reg.setSelf(testUser);
-        reg.save(testUser);
-
-        testUser = new BaseEntry();
-        testUser.setKey("@test02");
-        testUser.setNetAddress("127.0.0.1");
-        testUser.setPort(1338);
-
-        reg.setSelf(testUser);
-        reg.save(testUser);
+//        reg.save(testUser);
 ////
-        testUser = new BaseEntry();
-        testUser.setKey("#test");
-        testUser.setNetAddress("127.0.0.1");
-        testUser.setPort(1337);
-        reg.save(testUser);
+//        testUser = new BaseEntry();
+//        testUser.setKey("#test");
+//        testUser.setNetAddress("127.0.0.1");
+//        testUser.setPort(1337);
+//        reg.save(testUser);
 //
 //        RoomBaseEntry testRoom = new RoomBaseEntry();
 //        testRoom.setKey("#test");
@@ -100,19 +100,44 @@ public class Client extends Application {
                         // TODO: Implement stuff....
                         if (msg.matches()) {
                             switch (msg.group(1)) {
-                                // Manage Response for login.
 
-                                // Manage Response for auth.
+                                // Message from remote registry.
+                                case "USER":
+                                    msg = MSG_PATTERN.matcher(msg.group(2));
 
-                                // Manage simple message.
+                                    if (msg.matches()) {
+                                        switch(msg.group(1)) {
+
+                                            // Manage Response for auth/login.
+                                            case "AUTH":
+                                                if (!"fail".equalsIgnoreCase(msg.group(2))) {
+                                                    arreat.db.Client c = arreat.db.Client.fromJson(msg.group(2));
+
+                                                    RegistryEntry entry = RegistryService.getInstance().getRegistry().get(c.getPseudo());
+
+                                                    if (entry == null) {
+                                                        entry = new BaseEntry();
+                                                        ((BaseEntry) entry).setKey(c.getPseudo());
+
+                                                    }
+                                                    ((BaseEntry) entry).setNetAddress(c.getIp());
+                                                    ((BaseEntry) entry).setPort(c.getPort());
+                                                    RegistryService.getInstance().getRegistry().setSelf(entry);
+                                                }
+                                                break;
+                                        }
+                                    }
+
+                                // Manage chat messages.
                                 case "CMSG":
                                     Message chatMessage = Message.fromJson(msg.group(2));
 
+                                    // If it's not a message for us, it means it's a chat room.
                                     if (!RegistryService.getInstance().getRegistry().isSelf(chatMessage.getRecipient())) {
                                         RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatMessage.getRecipient());
 
                                         // If not found (means null and non instanceof, it means we're not
-                                        // the master node, noting to do.
+                                        // the master node.
                                         if (entry instanceof RoomBaseEntry) {
                                             for (String member : ((RoomBaseEntry) entry).getMembers()) {
                                                 if (!RegistryService.getInstance().getRegistry().isSelf(member) && !member.equals(chatMessage.getSender())) {
@@ -120,14 +145,42 @@ public class Client extends Application {
                                                     NetService.getInstance().send(e.getAddress(), msg.group(0));
                                                 }
                                             }
+                                            // Make sure we have an entry for the chat room if not we create it.
+                                        } else if (entry == null) {
+                                            entry = new BaseEntry();
+                                            ((BaseEntry) entry).setKey(chatMessage.getRecipient());
+                                            ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
+                                            ((BaseEntry) entry).setPort(udpMessage.getPort());
+
+                                            RegistryService.getInstance().getRegistry().save(entry);
                                         }
+
+                                        // Detach, this will be run the FX Application thread otherwise we can't modify the UI.
                                         Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getRecipient(), chatMessage.getSender(), chatMessage.getBody()));
+
+                                        // Simple one to one message.
                                     } else {
+                                        RegistryEntry entry = RegistryService.getInstance().getRegistry().get(chatMessage.getSender());
+
+                                        // Update the information of the sender.
+                                        if (entry instanceof BaseEntry) {
+                                            ((BaseEntry) entry).setPort(udpMessage.getPort());
+                                            ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
+
+                                            // Create a new entry for the sender.
+                                        } else if (entry == null) {
+                                            entry = new BaseEntry();
+                                            ((BaseEntry) entry).setKey(chatMessage.getSender());
+                                            ((BaseEntry) entry).setPort(udpMessage.getPort());
+                                            ((BaseEntry) entry).setNetAddress(udpMessage.getIp());
+                                        }
+                                        RegistryService.getInstance().getRegistry().save(entry);
+
+                                        // Detach, this will be run the FX Application thread otherwise we can't modify the UI.
                                         Platform.runLater(() -> ChatScene.receiveMessage(chatMessage.getSender(), chatMessage.getSender(), chatMessage.getBody()));
                                     }
                                     break;
 
-                                // Manage message as master node.
 
 
                                 // Manage ACK?

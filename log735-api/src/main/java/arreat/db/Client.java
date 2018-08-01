@@ -1,5 +1,7 @@
 package arreat.db;
 
+import com.google.gson.Gson;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -10,7 +12,10 @@ public class Client implements Serializable {
     private String pseudo;
     private String pwd;
 
-
+    public Client(String username, String password) {
+        this.pseudo = username;
+        this.pwd = password;
+    }
 
     public Client(int id, String ip, int port, String pseudo, String pwd) {
         this.id = id;
@@ -61,5 +66,14 @@ public class Client implements Serializable {
                 Objects.equals(ip, client.ip) &&
                 Objects.equals(pseudo, client.pseudo) &&
                 Objects.equals(id, client.id);
+    }
+
+    @Override
+    public String toString() {
+        return new Gson().toJson(this);
+    }
+
+    public static Client fromJson(String s) {
+        return new Gson().fromJson(s, Client.class);
     }
 }

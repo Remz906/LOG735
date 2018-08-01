@@ -91,7 +91,7 @@ public class Server implements Runnable {
             beginTimer = System.currentTimeMillis();
             this.masterIp = ip;
             this.masterPort = portNb;
-            System.out.println("New master elected "ipAndPortToLong + masterIp + ":" + String.valueOf(masterPort));
+            System.out.println("New master elected " + masterIp + ":" + String.valueOf(masterPort));
             isMaster = (ipAdd.equals(masterIp));
             if (isMaster) {
                 try {

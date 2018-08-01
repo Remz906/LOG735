@@ -40,5 +40,4 @@ public class UDPMessage {
         this.msg = msg;
         return this;
     }
-
 }

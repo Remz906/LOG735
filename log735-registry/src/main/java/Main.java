@@ -1,3 +1,4 @@
+import arreat.impl.core.NetService;
 import server.Pair;
 import server.Server;
 
@@ -17,6 +18,8 @@ public class Main {
         listOfServers.add(new Pair<>("127.0.0.1", 9080));
         listOfServers.add(new Pair<>("127.0.0.1", 9081));
         listOfServers.add(new Pair<>("127.0.0.1", 9082));
+
+        NetService.getInstance().configure();
 
         Server server = null;
 //        switch(args[0]){
