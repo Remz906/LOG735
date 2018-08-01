@@ -89,7 +89,7 @@ public class Server implements Runnable {
             masterPort = 0;
             if (electionTimer == 0)
                 electionTimer = System.currentTimeMillis();
-             sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER + ":" + String.valueOf(lastBDUpdate));
+            sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER + ":" + String.valueOf(lastBDUpdate));
             //sendCommandToAllServers(MASTER_ELECTION + ":" + UPDATE_MASTER + ":" + String.valueOf(lastBDUpdate));
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -97,20 +97,20 @@ public class Server implements Runnable {
     }
 
     private void setMaster(String ip, int portNb) {
-            electionTimer = 0;
-            beginTimer = System.currentTimeMillis();
-            this.masterIp = ip;
-            this.masterPort = portNb;
-            System.out.println("New master elected " + masterIp + ":" + String.valueOf(masterPort));
-            isMaster = (ipAdd.equals(ip) && this.portNb == portNb);
-            if (isMaster) {
-                try {
-                    sendCommandToAllClients(USER_HEATHER + ":" + UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
-                    sendCommandToAllServers(MASTER_ELECTION + ":" + UPDATE_MASTER + ":" + String.valueOf(lastBDUpdate));
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                }
+        electionTimer = 0;
+        beginTimer = System.currentTimeMillis();
+        this.masterIp = ip;
+        this.masterPort = portNb;
+        System.out.println("New master elected " + masterIp + ":" + String.valueOf(masterPort));
+        isMaster = (ipAdd.equals(ip) && this.portNb == portNb);
+        if (isMaster) {
+            try {
+                sendCommandToAllClients(USER_HEATHER + ":" + UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
+                sendCommandToAllServers(MASTER_ELECTION + ":" + UPDATE_MASTER + ":" + String.valueOf(lastBDUpdate));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
             }
+        }
 
     }
 
@@ -142,9 +142,9 @@ public class Server implements Runnable {
             while (!shutdownRequested) {
                 try {
                     Thread.sleep(HB_TIMER);
-                    if (masterIp != null  && masterPort != 0 && !isMaster && (masterPort != portNb)) {
+                    if (masterIp != null && masterPort != 0 && !isMaster && (masterPort != portNb)) {
                         NetService.getInstance().send(this.masterIp, this.masterPort, HB_MSG_HEATHER + ":" + HB_OK);
-                    }else if (isMaster){
+                    } else if (isMaster) {
                         beginTimer = System.currentTimeMillis();
                     }
                 } catch (InterruptedException | UnknownHostException e) {
@@ -166,7 +166,7 @@ public class Server implements Runnable {
 
     private boolean authNode(String name, String pass) {
         Node node = this.db.getNodeByName(name);
-        if (node != null){
+        if (node != null) {
             return node.getPwd().equals(pass);
         }
         return false;
@@ -188,7 +188,7 @@ public class Server implements Runnable {
     @Override
     public void run() {
 
-        boolean gossip = true;
+        boolean gossip = false;
         try {
             this.hbThread.start();
             while (!this.shutdownRequested) {
@@ -198,12 +198,10 @@ public class Server implements Runnable {
 
                     Gson gson = new Gson();
                     Matcher msg = MSG_PATTERN.matcher(udpMessage.getMsg()); //.split(":");
-                    gossip = true;
                     if (msg.matches()) {
                         switch (msg.group(1)) {
 
                             case HB_MSG_HEATHER:
-                                gossip = false;
                                 if (HB_OK.equals(msg.group(2))) {
                                     sendACK(udpMessage.getIp(), udpMessage.getPort(), HB_MSG_HEATHER);
                                     beginTimer = System.currentTimeMillis();
@@ -213,16 +211,15 @@ public class Server implements Runnable {
                                 break;
 
                             case MASTER_ELECTION:
-                                gossip = false;
                                 msg = MSG_PATTERN.matcher(msg.group(2));
 
                                 if (msg.matches()) {
                                     switch (msg.group(1)) {
                                         case MASTER_FIND_MASTER:
                                             if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)){
+                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
                                                     setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                                }else{
+                                                } else {
                                                     setMaster(this.ipAdd, this.portNb);
                                                 }
 
@@ -232,9 +229,9 @@ public class Server implements Runnable {
                                             break;
                                         case INFO_FM_RESPONSE:
                                             if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)){
+                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
                                                     setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                                }else{
+                                                } else {
                                                     setMaster(this.ipAdd, this.portNb);
                                                 }
 
@@ -244,9 +241,9 @@ public class Server implements Runnable {
                                         case UPDATE_MASTER:
 
                                             if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)){
+                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
                                                     setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                                }else{
+                                                } else {
                                                     setMaster(this.ipAdd, this.portNb);
                                                 }
 
@@ -256,12 +253,6 @@ public class Server implements Runnable {
                                             break;
                                     }
 
-//                                    if (this.ipAdd.equals(this.masterIp) && this.masterPort == this.portNb){
-//                                        isMaster = true;
-//                                    }else{
-//                                        isMaster = false;
-//
-//                                    }
 
                                 }
                                 break;
@@ -274,6 +265,7 @@ public class Server implements Runnable {
                                 if (msg.matches()) {
                                     switch (msg.group(1)) {
                                         case COMMAND_ADD:
+                                            gossip = true;
                                             clt = gson.fromJson(msg.group(2), Client.class);
                                             clt.setIp(udpMessage.getIp());
                                             clt.setPort(udpMessage.getPort());
@@ -286,6 +278,7 @@ public class Server implements Runnable {
                                             }
                                             break;
                                         case COMMAND_UPDATE:
+                                            gossip = true;
                                             clt = gson.fromJson(msg.group(2), Client.class);
                                             clt.setIp(udpMessage.getIp());
                                             clt.setPort(udpMessage.getPort());
@@ -294,6 +287,7 @@ public class Server implements Runnable {
                                             this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
                                             break;
                                         case COMMAND_UPDATE_ALL:
+                                            gossip = true;
                                             cltList = gson.fromJson(msg.group(2), new TypeToken<List<Client>>() {
                                             }.getType());
                                             this.db.updateAllClt(cltList);
@@ -301,6 +295,7 @@ public class Server implements Runnable {
                                             this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
                                             break;
                                         case COMMAND_DELETE:
+                                            gossip = true;
                                             clt = gson.fromJson(msg.group(2), Client.class);
                                             this.db.deleteClt(clt);
                                             this.lastBDUpdate = System.currentTimeMillis();
@@ -343,113 +338,118 @@ public class Server implements Runnable {
                                 }
                                 break;
 
-                                case NODE_HEATHER:
-                                    Node node;
-                                    msg = MSG_PATTERN.matcher(msg.group(2));
+                            case NODE_HEATHER:
+                                Node node;
+                                msg = MSG_PATTERN.matcher(msg.group(2));
 
-                                    if (msg.matches()) {
+                                if (msg.matches()) {
 
-                                        switch (msg.group(1)) {
-                                            case COMMAND_ADD:
-                                                node = gson.fromJson(msg.group(2), Node.class);
+                                    switch (msg.group(1)) {
+                                        case COMMAND_ADD:
+                                            gossip = true;
+                                            node = gson.fromJson(msg.group(2), Node.class);
+                                            this.db.newNode(node);
+                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                            break;
+                                        case COMMAND_UPDATE:
+                                            gossip = true;
+                                            node = gson.fromJson(msg.group(2), Node.class);
+                                            this.db.updateNode(node);
+                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                            break;
+                                        case COMMAND_UPDATE_ALL:
+                                            gossip = true;
+                                            List<Node> nodeList = gson.fromJson(msg.group(2), new TypeToken<List<Node>>() {
+                                            }.getType());
+                                            this.db.updateAllNode(nodeList);
+                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                            break;
+                                        case COMMAND_DELETE:
+                                            gossip = true;
+                                            node = gson.fromJson(msg.group(2), Node.class);
+                                            this.db.deleteNode(node);
+                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
+                                            break;
+                                        case NODE_GET_BY_NAME:
+                                            node = this.db.getNodeByName(msg.group(2));
+                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
+                                            break;
+                                        case AUTH:
+                                            //2 = roomName 3 = pass
+                                            String[] msgSplit = msg.group(2).split(":");
+
+                                            boolean auth = authNode(msgSplit[0], msgSplit[1]);
+                                            if (auth) {
+                                                node = this.db.getNodeByName(msgSplit[0]);
+                                                Client masterClt = this.db.getClientByPseudo(node.getMasterUser());
+
+                                                // Workaround to set the right name for the conversation.
+                                                masterClt.setPseudo(msgSplit[0]);
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(masterClt));
+
+
+                                                //get new client
+                                                clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
+
+                                                //should be added to db here
+                                                /////
+
+
+                                                NetService.getInstance().send(masterClt.getIp(), masterClt.getPort(), NODE_HEATHER + ":" + node.getName() + ":" + gson.toJson(clt));
+
+
+                                            } else if (this.db.getNodeByName(msgSplit[0]) == null) {
+                                                clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
+                                                node = new Node(msgSplit[0], clt.getPseudo(), msgSplit[1]);
                                                 this.db.newNode(node);
-                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                                break;
-                                            case COMMAND_UPDATE:
-                                                node = gson.fromJson(msg.group(2), Node.class);
-                                                this.db.updateNode(node);
-                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                                break;
-                                            case COMMAND_UPDATE_ALL:
-                                                List<Node> nodeList = gson.fromJson(msg.group(2), new TypeToken<List<Node>>() {
-                                                }.getType());
-                                                this.db.updateAllNode(nodeList);
-                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                                break;
-                                            case COMMAND_DELETE:
-                                                node = gson.fromJson(msg.group(2), Node.class);
-                                                this.db.deleteNode(node);
-                                                this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                                break;
-                                            case NODE_GET_BY_NAME:
-                                                node = this.db.getNodeByName(msg.group(2));
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
-                                                break;
-                                            case AUTH:
-                                                //2 = roomName 3 = pass
-                                                String[] msgSplit = msg.group(2).split(":");
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + "CREATED" + ":" + msgSplit[0]);
+                                                sendCommandToAllServers(NODE_HEATHER + ":" + COMMAND_ADD + ":" + gson.toJson(node));
+                                            } else {
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
+                                            }
 
-                                                boolean auth = authNode(msgSplit[0], msgSplit[1]);
-                                                if (auth) {
-                                                    node = this.db.getNodeByName(msgSplit[0]);
-                                                    Client masterClt = this.db.getClientByPseudo(node.getMasterUser());
+                                            break;
 
-                                                    // Workaround to set the right name for the conversation.
-                                                    masterClt.setPseudo(msgSplit[0]);
-                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(masterClt));
-
-
-                                                    //get new client
-                                                    clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
-
-                                                    //should be added to db here
-                                                    /////
-
-
-                                                    NetService.getInstance().send(masterClt.getIp(), masterClt.getPort(), NODE_HEATHER + ":" + node.getName() + ":" + gson.toJson(clt));
-
-
-                                                } else if (this.db.getNodeByName(msgSplit[0]) == null) {
-                                                    clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
-                                                    node = new Node(msgSplit[0], clt.getPseudo(), msgSplit[1]);
-                                                    this.db.newNode(node);
-                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + "CREATED" + ":" + msgSplit[0]);
-                                                } else {
-                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
-                                                }
-
-                                                break;
-
-                                        }
                                     }
-                                    this.lastBDUpdate = System.currentTimeMillis();
-                                    break;
-
                                 }
-                        }
+                                this.lastBDUpdate = System.currentTimeMillis();
+                                break;
 
-
-                        //propagate throughout the network
-                        if (isMaster && gossip) {
-                            sendCommandToAllServers(udpMessage.getMsg());
                         }
-                    } else {
-                        System.out.println("no msg received " + String.valueOf(portNb) + " masterPort "  + String.valueOf(this.masterPort));
-                        Thread.sleep(1000);
                     }
 
-                    long curTime = System.currentTimeMillis();
-                if (electionTimer != 0 && Math.abs(curTime- electionTimer) >= 3000){
+
+                    //propagate throughout the network
+                    if (isMaster && gossip) {
+                        System.out.println("GOSSIPING --> " + msg);
+                        sendCommandToAllServers(udpMessage.getMsg());
+                    }
+                } else {
+                    System.out.println("no msg received " + String.valueOf(portNb) + " masterPort " + String.valueOf(this.masterPort));
+                    Thread.sleep(1000);
+                }
+
+                long curTime = System.currentTimeMillis();
+                if (electionTimer != 0 && Math.abs(curTime - electionTimer) >= 3000) {
                     setMaster(this.ipAdd, this.portNb);
                 }
 
-                if (beginTimer != 0 && Math.abs(curTime-  beginTimer) >= MASTER_ELECTION_TIMER ) {
+                if (beginTimer != 0 && Math.abs(curTime - beginTimer) >= MASTER_ELECTION_TIMER) {
                     System.out.println("master connection lost");
                     electMaster();
                 }
 
-                if (udpMessage != null && Utilities.ipAndPortToLong(this.masterIp, this.masterPort) < Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort())){
-                    setMaster(udpMessage.getIp(),udpMessage.getPort());
+                if (udpMessage != null && Utilities.ipAndPortToLong(this.masterIp, this.masterPort) < Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort())) {
+                    setMaster(udpMessage.getIp(), udpMessage.getPort());
                 }
 
 
-
-                }
-            } catch(Exception e){
-                System.out.println(e);
-            } finally{
-                shutdown();
             }
+        } catch (Exception e) {
+            System.out.println(e);
+        } finally {
+            shutdown();
+        }
     }
 
     static {
