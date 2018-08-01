@@ -292,10 +292,10 @@ public class Server implements Runnable {
                                                     clt.setIp(udpMessage.getIp());
                                                     clt.setPort(udpMessage.getPort());
                                                     this.db.updateClt(clt);
-                                                    NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
                                                     sendCommandToAllServers(USER_HEATHER + ":" + COMMAND_UPDATE + ":" + gson.toJson(clt));
                                                     gossip = false;
                                                 }
+                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
 
                                             } else {
                                                 NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
@@ -345,11 +345,14 @@ public class Server implements Runnable {
                                                 if (auth) {
                                                     node = this.db.getNodeByName(msgSplit[0]);
                                                     Client masterClt = this.db.getClientByPseudo(node.getMasterUser());
+
+                                                    // Workaround to set the right name for the conversation.
+                                                    masterClt.setPseudo(msgSplit[0]);
                                                     NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(masterClt));
 
 
                                                     //get new client
-                                                    clt = this.db.getClientByIp(udpMessage.getIp());
+                                                    clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
 
                                                     //should be added to db here
                                                     /////
@@ -359,7 +362,7 @@ public class Server implements Runnable {
 
 
                                                 } else if (this.db.getNodeByName(msgSplit[0]) == null) {
-                                                    clt = this.db.getClientByIp(udpMessage.getIp());
+                                                    clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
                                                     node = new Node(msgSplit[0], clt.getPseudo(), msgSplit[1]);
                                                     this.db.newNode(node);
                                                     NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + "CREATED" + ":" + msgSplit[0]);
