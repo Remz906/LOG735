@@ -15,9 +15,9 @@ public class Main {
 
 
     public static void main(String[] args) throws SocketException {
-        listOfServers.add(new Pair<>("127.0.0.1", 9084));
-        listOfServers.add(new Pair<>("127.0.0.1", 9085));
-        listOfServers.add(new Pair<>("127.0.0.1", 9086));
+        listOfServers.add(new Pair<>("127.0.0.1", 9087));
+        listOfServers.add(new Pair<>("127.0.0.1", 9088));
+        listOfServers.add(new Pair<>("127.0.0.1", 9089));
         NetService.getInstance().configure();
 
         Server server = null;
@@ -32,7 +32,7 @@ public class Main {
 //                server = new Server(9081, LOCAL_HOST, listOfServers);
 //                break;
 //        }
-        server = new Server(9086,"127.0.0.1", listOfServers);
+        server = new Server(9089,"127.0.0.1", listOfServers);
 
         if (server != null) {
             boolean shutdown = false;

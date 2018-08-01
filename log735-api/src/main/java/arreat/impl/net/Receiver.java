@@ -13,12 +13,11 @@ public class Receiver implements Runnable {
     private final byte[] buffer;
 
 
-    private LinkedList<UDPMessage> UDPMessages;
+    static private LinkedList<UDPMessage> UDPMessages = new LinkedList<>();
 
     public Receiver(byte[] buffer) {
 //        this.socket = socket;
         this.buffer = buffer;
-        this.UDPMessages = new LinkedList<>();
     }
 
     public LinkedList<UDPMessage> getUDPMessages() {

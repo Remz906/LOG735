@@ -18,7 +18,7 @@ public class Server implements Runnable {
 
     private static final Pattern MSG_PATTERN;
 
-    private static final int HB_TIMER = 1000;
+    private static final int HB_TIMER = 5000;
     private static final String HB_MSG_HEATHER = "HB";
     private static final String HB_OK = "OK";
     private static final String HB_DOWN = "DOWN";
@@ -87,9 +87,10 @@ public class Server implements Runnable {
             isMaster = false;
             masterIp = "127.0.0.1";
             masterPort = 0;
-            electionTimer = System.currentTimeMillis();
-            // sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER + ":" + String.valueOf(lastBDUpdate));
-            sendCommandToAllServers(MASTER_ELECTION + ":" + UPDATE_MASTER + ":" + String.valueOf(lastBDUpdate));
+            if (electionTimer == 0)
+                electionTimer = System.currentTimeMillis();
+             sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER + ":" + String.valueOf(lastBDUpdate));
+            //sendCommandToAllServers(MASTER_ELECTION + ":" + UPDATE_MASTER + ":" + String.valueOf(lastBDUpdate));
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
@@ -101,7 +102,7 @@ public class Server implements Runnable {
             this.masterIp = ip;
             this.masterPort = portNb;
             System.out.println("New master elected " + masterIp + ":" + String.valueOf(masterPort));
-            isMaster = (ipAdd.equals(ip));
+            isMaster = (ipAdd.equals(ip) && this.portNb == portNb);
             if (isMaster) {
                 try {
                     sendCommandToAllClients(USER_HEATHER + ":" + UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
@@ -115,6 +116,7 @@ public class Server implements Runnable {
 
     private void shutdown() {
         this.db.disconnect();
+        this.hbThread.destroy();
     }
 
     private void sendCommandToAllServers(String command) throws UnknownHostException {
@@ -142,7 +144,7 @@ public class Server implements Runnable {
                     Thread.sleep(HB_TIMER);
                     if (masterIp != null  && masterPort != 0 && !isMaster && (masterPort != portNb)) {
                         NetService.getInstance().send(this.masterIp, this.masterPort, HB_MSG_HEATHER + ":" + HB_OK);
-                    }else{
+                    }else if (isMaster){
                         beginTimer = System.currentTimeMillis();
                     }
                 } catch (InterruptedException | UnknownHostException e) {
@@ -201,6 +203,7 @@ public class Server implements Runnable {
                         switch (msg.group(1)) {
 
                             case HB_MSG_HEATHER:
+                                gossip = false;
                                 if (HB_OK.equals(msg.group(2))) {
                                     sendACK(udpMessage.getIp(), udpMessage.getPort(), HB_MSG_HEATHER);
                                     beginTimer = System.currentTimeMillis();
@@ -217,35 +220,48 @@ public class Server implements Runnable {
                                     switch (msg.group(1)) {
                                         case MASTER_FIND_MASTER:
                                             if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)){
+                                                    setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                                }else{
+                                                    setMaster(this.ipAdd, this.portNb);
+                                                }
+
                                             }
                                             NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
                                             updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
                                             break;
                                         case INFO_FM_RESPONSE:
-                                            if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
-                                                setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                            } else {
-                                                setMaster(this.ipAdd, this.portNb);
+                                            if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
+                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)){
+                                                    setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                                }else{
+                                                    setMaster(this.ipAdd, this.portNb);
+                                                }
+
                                             }
                                             updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
                                             break;
                                         case UPDATE_MASTER:
 
                                             if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)){
+                                                    setMaster(udpMessage.getIp(), udpMessage.getPort());
+                                                }else{
+                                                    setMaster(this.ipAdd, this.portNb);
+                                                }
+
                                             }
                                             NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
                                             updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
                                             break;
                                     }
 
-                                    if (this.ipAdd.equals(this.masterIp) && this.masterPort == this.portNb){
-                                        isMaster = true;
-                                    }else{
-                                        isMaster = false;
-
-                                    }
+//                                    if (this.ipAdd.equals(this.masterIp) && this.masterPort == this.portNb){
+//                                        isMaster = true;
+//                                    }else{
+//                                        isMaster = false;
+//
+//                                    }
 
                                 }
                                 break;
@@ -408,15 +424,16 @@ public class Server implements Runnable {
                             sendCommandToAllServers(udpMessage.getMsg());
                         }
                     } else {
-                        System.out.println("no msg received " + String.valueOf(portNb));
+                        System.out.println("no msg received " + String.valueOf(portNb) + " masterPort "  + String.valueOf(this.masterPort));
                         Thread.sleep(1000);
                     }
 
-                if (electionTimer != 0 && (System.currentTimeMillis() - electionTimer) >= 4000){
+                    long curTime = System.currentTimeMillis();
+                if (electionTimer != 0 && Math.abs(curTime- electionTimer) >= 3000){
                     setMaster(this.ipAdd, this.portNb);
                 }
 
-                if (beginTimer != 0 && System.currentTimeMillis() - beginTimer >= MASTER_ELECTION_TIMER ) {
+                if (beginTimer != 0 && Math.abs(curTime-  beginTimer) >= MASTER_ELECTION_TIMER ) {
                     System.out.println("master connection lost");
                     electMaster();
                 }
