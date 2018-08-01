@@ -1,5 +1,5 @@
 netConfiguration:
-  receivingPort: 1337
+  receivingPort: 1338
 
 registryConfiguration:
   type: "arreat.impl.registry.CacheRegistry"
