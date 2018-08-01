@@ -13,4 +13,5 @@ public interface Registry {
     RegistryEntry getDefaultRemote();
     RegistryEntry getSelf();
     void setSelf(RegistryEntry self);
+    void setDefaultRemote(RegistryEntry defaultRemote);
 }

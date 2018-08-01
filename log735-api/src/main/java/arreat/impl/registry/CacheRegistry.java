@@ -70,4 +70,9 @@ public class CacheRegistry implements Registry {
     public void setSelf(RegistryEntry self) {
         this.self = self;
     }
+
+    @Override
+    public void setDefaultRemote(RegistryEntry defaultRemote) {
+        this.defaultRemote = defaultRemote;
+    }
 }
