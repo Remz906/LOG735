@@ -51,11 +51,14 @@ public final class NetService implements Service {
 
     public void send(String ipAdd, int portNb, String string) throws UnknownHostException {
         InetAddress address = InetAddress.getByName(ipAdd);
-        this.sender.send(new DatagramPacket(string.getBytes(), string.length(), address, portNumber));
+        this.sender.send(new DatagramPacket(string.getBytes(), string.getBytes().length, address, portNb));
     }
 
     public UDPMessage receive() {
-        return this.receiver.getUDPMessages().pop();
+        if (this.receiver.getUDPMessages().size() == 0)
+            return null;
+        else
+            return this.receiver.getUDPMessages().pop();
     }
 
     @Deprecated
