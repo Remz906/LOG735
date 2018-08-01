@@ -15,10 +15,9 @@ public class Main {
 
 
     public static void main(String[] args) throws SocketException {
-        listOfServers.add(new Pair<>("127.0.0.1", 9080));
-        listOfServers.add(new Pair<>("127.0.0.1", 9081));
-        listOfServers.add(new Pair<>("127.0.0.1", 9082));
-
+        listOfServers.add(new Pair<>("127.0.0.1", 9084));
+        listOfServers.add(new Pair<>("127.0.0.1", 9085));
+        listOfServers.add(new Pair<>("127.0.0.1", 9086));
         NetService.getInstance().configure();
 
         Server server = null;
