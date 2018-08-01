@@ -123,6 +123,9 @@ public class Client extends Application {
                                                     ((BaseEntry) entry).setNetAddress(c.getIp());
                                                     ((BaseEntry) entry).setPort(c.getPort());
                                                     RegistryService.getInstance().getRegistry().setSelf(entry);
+
+                                                    final String username = entry.getKey();
+                                                    Platform.runLater(() -> switchScene(new ChatScene(), String.format("Chat - %s", username)));
                                                 }
                                                 break;
                                         }
