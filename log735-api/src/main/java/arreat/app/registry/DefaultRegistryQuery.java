@@ -22,22 +22,51 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.app.registry;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
 import arreat.api.registry.entry.Entry;
+import arreat.api.registry.query.Filter;
 import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
 
-public interface Registry extends AutoCloseable, Configurable  {
+public class DefaultRegistryQuery implements RegistryQuery {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  @Override
+  public Action getAction() {
+    return null;
+  }
 
-  Set<Origin> getOrigins();
+  @Override
+  public Entry getEntry() {
+    return null;
+  }
 
-  boolean isOrigin();
+  @Override
+  public Filter getFilter() {
+    return null;
+  }
 
-  boolean manages(Class<? extends Entry> entryType);
+  @Override
+  public Class<? extends Entry> getTarget() {
+    return null;
+  }
+
+  @Override
+  public void setAction(Action action) {
+
+  }
+
+  @Override
+  public void setEntry(Entry entry) {
+
+  }
+
+  @Override
+  public void setFilter(Filter filter) {
+
+  }
+
+  @Override
+  public void setTarget(Class<? extends Entry> target) {
+
+  }
 }

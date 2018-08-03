@@ -33,7 +33,7 @@ public class Client extends Application {
         RegistryService.getInstance().configure();
 
         // TODO: Remove once test is done.
-//        Registry reg = RegistryService.getInstance().getRegistry();
+//        Registry2 reg = RegistryService.getInstance().getRegistry();
 //        BaseEntry testUser = new BaseEntry();
 //        testUser.setKey("@test01");
 //        testUser.setNetAddress("127.0.0.1");

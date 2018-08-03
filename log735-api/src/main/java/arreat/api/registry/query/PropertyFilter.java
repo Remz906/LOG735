@@ -22,22 +22,15 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.registry.query;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+public interface PropertyFilter extends Filter {
 
-public interface Registry extends AutoCloseable, Configurable  {
+  String getPropertyName();
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  Object getPropertyValue();
 
-  Set<Origin> getOrigins();
+  void setPropertyName(String name);
 
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  void setPropertyValue(Object value);
 }

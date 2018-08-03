@@ -22,22 +22,21 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.registry.entry;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
 import java.util.Set;
 
-public interface Registry extends AutoCloseable, Configurable  {
+public interface Room extends Entry {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  void addMember(User member);
 
-  Set<Origin> getOrigins();
+  User getMaster();
 
-  boolean isOrigin();
+  Set<User> getMembers();
 
-  boolean manages(Class<? extends Entry> entryType);
+  void removeMember(User member);
+
+  void setMaster(User master);
+
+  void setMembers(Set<User> users);
 }

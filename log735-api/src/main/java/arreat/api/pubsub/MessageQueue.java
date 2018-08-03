@@ -22,22 +22,26 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.pubsub;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.message.Message;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Defines a simple message queue useful for asynchronous processing.
+ */
+public interface MessageQueue {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  /**
+   * Returns the next message in the queue or null if there are no message.
+   *
+   * @return  The next message.
+   */
+  Message getMessage();
 
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Tells if the queue contain any messages.
+   *
+   * @return  Whether there is one or more message in the queue.
+   */
+  boolean hasMessage();
 }

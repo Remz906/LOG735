@@ -22,22 +22,19 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.pubsub;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
+import arreat.api.message.Message;
 import java.util.Set;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Defines a subscriber that consume some message types.
+ */
+public interface Subscriber {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Returns a set of Message implementation that the service needs to consume.
+   * @return  Set of types that need to be consumed by the service.
+   */
+  Set<Class<? extends Message>> getConsumedMessagesType();
 }

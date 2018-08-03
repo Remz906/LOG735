@@ -22,22 +22,11 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.registry.entry;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+public interface User extends Entry {
 
-public interface Registry extends AutoCloseable, Configurable  {
+  String getUsername();
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  void setUsername(String username);
 }

@@ -22,22 +22,20 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.registry.query;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+public interface Filter {
 
-public interface Registry extends AutoCloseable, Configurable  {
+  enum Operator {
+    AND,
+    EQUALS,
+    GREATER,
+    LOWER,
+    NOT_EQUALS,
+    OR
+  }
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  Operator getOperator();
 
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  void setOperator();
 }

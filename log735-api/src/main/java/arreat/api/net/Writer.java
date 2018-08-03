@@ -22,22 +22,18 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.net;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public interface Registry extends AutoCloseable, Configurable  {
-
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+/**
+ * Defines the writer of a message, this tells the receiver to create a message to update
+ * the entry of this field.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Writer {
 }

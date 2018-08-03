@@ -1,13 +1,13 @@
 package arreat.impl.registry;
 
-import arreat.api.registry.Registry;
+import arreat.api.registry.Registry2;
 import arreat.api.registry.RegistryEntry;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CacheRegistry implements Registry {
+public class CacheRegistry implements Registry2 {
 
     private final Map<String, RegistryEntry> entries;
     private RegistryEntry defaultRemote;

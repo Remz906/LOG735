@@ -22,22 +22,33 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.cfg;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.service.Service;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Defines a global configuration that stores multiple instances of configuration. Use to contain
+ * the configuration the Arreat App. It can be serialize and deserialize from YAML.
+ */
+public interface GlobalConfiguration {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+    /**
+     * Get the configuration for a specific service. Uses the simple name of the class as a key for
+     * the YAML file.
+     *
+     * @param serviceType   The class of the service.
+     * @return  The configuration for that service.
+     */
+    default Configuration getConfiguration(Class<? extends Service> serviceType) {
+        return this.getConfiguration(serviceType.getSimpleName());
+    }
 
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+    /**
+     * Get the configuration for a specific service. Uses the simple name of the class as a key for
+     * the YAML file.
+     *
+     * @param name   The class of the service.
+     * @return  The configuration for that service.
+     */
+    Configuration getConfiguration(String name);
 }

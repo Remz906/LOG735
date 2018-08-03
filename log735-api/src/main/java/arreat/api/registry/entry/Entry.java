@@ -22,22 +22,14 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.registry.entry;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import java.net.InetAddress;
 
-public interface Registry extends AutoCloseable, Configurable  {
+public interface Entry {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  InetAddress getInetAddress();
+  int getPort();
+  void setInetAddress(InetAddress inetAddress);
+  void setPort(int port);
 }

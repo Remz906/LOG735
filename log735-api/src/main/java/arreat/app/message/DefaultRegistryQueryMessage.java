@@ -22,22 +22,31 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.app.message;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
+import arreat.api.message.RegistryQueryMessage;
 import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.service.Service;
 
-public interface Registry extends AutoCloseable, Configurable  {
+public class DefaultRegistryQueryMessage implements RegistryQueryMessage {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  @Override
+  public Class<? extends Service> getRecipient() {
+    return null;
+  }
 
-  Set<Origin> getOrigins();
+  @Override
+  public RegistryQuery getRegistryQuery() {
+    return null;
+  }
 
-  boolean isOrigin();
+  @Override
+  public void setRecipient(Class<? extends Service> recipient) {
 
-  boolean manages(Class<? extends Entry> entryType);
+  }
+
+  @Override
+  public void setQuery(RegistryQuery query) {
+
+  }
 }

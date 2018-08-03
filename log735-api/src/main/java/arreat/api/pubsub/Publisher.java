@@ -22,22 +22,17 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.pubsub;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+/**
+ * Defines a publisher that needs to know the service bus in order to publish messages.
+ */
+public interface Publisher {
 
-public interface Registry extends AutoCloseable, Configurable  {
-
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Set the service bus for the publisher to publish.
+   *
+   * @param bus The service bus for publishing.
+   */
+  void setServiceBus(ServiceBus bus);
 }

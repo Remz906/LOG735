@@ -22,22 +22,17 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.net;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+/**
+ * Defines a net component that uses a net socket to communicate with the network. Communication is
+ * done using an unknown type of socket.
+ */
+public interface NetComponent {
 
-public interface Registry extends AutoCloseable, Configurable  {
-
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Set the net socket the component should be using to communicate.
+   * @param socket  The net socket to use.
+   */
+  void setSocket(Socket socket);
 }

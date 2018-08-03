@@ -22,22 +22,25 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.app.message;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.message.AckMessage;
 
-public interface Registry extends AutoCloseable, Configurable  {
+public class DefaultAckMessage implements AckMessage {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  private String hash;
 
-  Set<Origin> getOrigins();
+  public DefaultAckMessage(String hash) {
+    this.setHash(hash);
+  }
 
-  boolean isOrigin();
+  @Override
+  public String getHash() {
+    return this.hash;
+  }
 
-  boolean manages(Class<? extends Entry> entryType);
+  @Override
+  public void setHash(String hash) {
+    this.hash = hash;
+  }
 }

@@ -22,22 +22,17 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.cfg;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+/**
+ * Defines a configurable object.
+ */
+public interface Configurable {
 
-public interface Registry extends AutoCloseable, Configurable  {
-
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Configure the configurable the class to be ready for use.
+   *
+   * @param cfg The configuration use to configure the configurable.
+   */
+  void configure(Configuration cfg);
 }

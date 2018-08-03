@@ -22,22 +22,53 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.app.pubsub;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.message.Message;
+import arreat.api.pubsub.MessageQueue;
+import java.util.LinkedList;
+import java.util.Queue;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Abstract implementation of message queue to avoid code duplication.
+ */
+public abstract class AbstractMessageQueue implements MessageQueue {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  private final Queue<Message> queue;
 
-  Set<Origin> getOrigins();
+  /**
+   * Default constructor for the message queue.
+   */
+  public AbstractMessageQueue() {
+    this.queue = new LinkedList<>();
+  }
 
-  boolean isOrigin();
+  /**
+   * Allow message to be added to the queue.
+   *
+   * @param message Message to add.
+   */
+  protected void queue(Message message) {
+    this.queue.add(message);
+  }
 
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Returns the next message in the queue or null if there are no message.
+   *
+   * @return  The next message.
+   */
+  @Override
+  public Message getMessage() {
+    return this.queue.poll();
+  }
+
+  /**
+   * Tells if the queue contain any messages.
+   *
+   * @return  Whether there is one or more message in the queue.
+   */
+  @Override
+  public boolean hasMessage() {
+    return !this.queue.isEmpty();
+  }
 }

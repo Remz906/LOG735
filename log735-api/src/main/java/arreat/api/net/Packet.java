@@ -22,22 +22,42 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.net;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import java.net.SocketAddress;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Defines a packet that can be send and received by the Socket.
+ */
+public interface Packet {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  /**
+   * Address to which the packet will be send or the address from which it comes from in case of
+   * a receive.
+   *
+   * @return  The socket address.
+   */
+  SocketAddress getAddress();
 
-  Set<Origin> getOrigins();
+  /**
+   * The data as string that will be sent or received by the packet through the socket.
+   *
+   * @return  The data.
+   */
+  String getData();
 
-  boolean isOrigin();
+  /**
+   * Address to which the packet will be send or the address from which it comes from in case of
+   * a receive.
+   *
+   * @param address The socket address.
+   */
+  void setAddress(SocketAddress address);
 
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * The data as string that will be sent or received by packet through the socket.
+   *
+   * @param data  The data.
+   */
+  void setData(String data);
 }

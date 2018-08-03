@@ -22,22 +22,38 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.pubsub;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.message.Message;
+import arreat.api.service.Service;
+import java.util.Collection;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Defines a service bus use by all the services to publish and subscribe to different message
+ * types.
+ */
+public interface ServiceBus {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  /**
+   * Publish a message through the service bus.
+   *
+   * @param message The message that will be published inside the bus.
+   */
+  void publish(Message message);
 
-  Set<Origin> getOrigins();
+  /**
+   * Subscribe to a type of message.
+   *
+   * @param service The service that subscribe to a specific type of message.
+   * @param type    The message type the service is subscribing to.
+   */
+  void subscribe(Service service, Class<? extends Message> type);
 
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Subscribe to multiple type of messages.
+   *
+   * @param service The service that subscribe to multiple type of messages.
+   * @param types   The messages type the service is subscribing to.
+   */
+  void subscribe(Service service, Collection<Class<? extends Message>> types);
 }

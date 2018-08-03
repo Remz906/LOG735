@@ -22,22 +22,58 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.app.net;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.net.Packet;
+import java.net.SocketAddress;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Default implementation of the packet.
+ */
+public class DefaultPacket implements Packet {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  private SocketAddress address;
+  private String data;
 
-  Set<Origin> getOrigins();
+  /**
+   * Address to which the packet will be send or the address from which it comes from in case of
+   * a receive.
+   *
+   * @return  The socket address.
+   */
+  @Override
+  public SocketAddress getAddress() {
+    return this.address;
+  }
 
-  boolean isOrigin();
+  /**
+   * The data as string that will be sent or received by the packet through the socket.
+   *
+   * @return  The data.
+   */
+  @Override
+  public String getData() {
+    return this.data;
+  }
 
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Address to which the packet will be send or the address from which it comes from in case of
+   * a receive.
+   *
+   * @param address The socket address.
+   */
+  @Override
+  public void setAddress(SocketAddress address) {
+    this.address = address;
+  }
+
+  /**
+   * The data as string that will be sent or received by packet through the socket.
+   *
+   * @param data  The data.
+   */
+  @Override
+  public void setData(String data) {
+    this.data = data;
+  }
 }

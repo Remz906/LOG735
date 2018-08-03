@@ -22,22 +22,30 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.service;
 
 import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
+import arreat.api.pubsub.Publisher;
+import arreat.api.pubsub.Subscriber;
 
-public interface Registry extends AutoCloseable, Configurable  {
+/**
+ * Defines a service used by the Arreat App. Services are acting as pub-sub that produce and
+ * consumes messages.
+ *
+ * <p>Services follow a standard lifecycle, they are first configured, register for subscription
+ * through the getConsumedMessagesType method that tells the service bus which message it wants to
+ * consumed. The the service is started which allows it to publish since it knows the event bus, if
+ * need finally the service is terminated at the end of it's useful life.
+ */
+public interface Service extends Configurable, Publisher, Runnable, Subscriber {
 
-  RegistryQueryResultMessage execute(RegistryQuery query);
+  /**
+   * @return Whether the service should be run asynchronously or not.
+   */
+  boolean asynchronous();
 
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+  /**
+   * Call any actions that are need to be perform when the service is shutting down.
+   */
+  void terminate();
 }

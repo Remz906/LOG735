@@ -22,22 +22,8 @@
  * SOFTWARE.
  */
 
-package arreat.api.registry;
+package arreat.api.registry.entry;
 
-import arreat.api.cfg.Configurable;
-import arreat.api.message.RegistryQueryResultMessage;
-import arreat.api.registry.entry.Entry;
-import arreat.api.registry.query.RegistryQuery;
-import com.sun.management.VMOption.Origin;
-import java.util.Set;
-
-public interface Registry extends AutoCloseable, Configurable  {
-
-  RegistryQueryResultMessage execute(RegistryQuery query);
-
-  Set<Origin> getOrigins();
-
-  boolean isOrigin();
-
-  boolean manages(Class<? extends Entry> entryType);
+public interface Origin extends Entry {
+  boolean isMaster();
 }
