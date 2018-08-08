@@ -1,4 +1,4 @@
-package arreat.api.core;
+package arreat.api.service;
 
 public interface Service {
 

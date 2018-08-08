@@ -1,9 +1,9 @@
-package arreat.impl.core;
+package arreat.core.service;
 
-import arreat.api.core.Service;
+import arreat.api.service.Service;
 import arreat.api.registry.Registry;
-import arreat.impl.registry.CacheRegistry;
-import arreat.impl.config.RegistryConfiguration;
+import arreat.core.registry.CacheRegistry;
+import arreat.core.config.RegistryConfiguration;
 
 public final class RegistryService implements Service {
 

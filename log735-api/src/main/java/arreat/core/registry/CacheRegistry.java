@@ -1,4 +1,4 @@
-package arreat.impl.registry;
+package arreat.core.registry;
 
 import arreat.api.registry.Registry;
 import arreat.api.registry.RegistryEntry;

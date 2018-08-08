@@ -1,9 +1,9 @@
 package client.ui;
 
 import arreat.api.registry.RegistryEntry;
-import arreat.impl.core.NetService;
-import arreat.impl.core.RegistryService;
-import arreat.impl.registry.RoomBaseEntry;
+import arreat.core.service.NetService;
+import arreat.core.service.RegistryService;
+import arreat.core.registry.RoomBaseEntry;
 import client.chat.Message;
 import com.google.gson.Gson;
 import javafx.geometry.Side;

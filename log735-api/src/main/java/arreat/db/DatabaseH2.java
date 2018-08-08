@@ -1,6 +1,6 @@
 package arreat.db;
 
-import arreat.impl.Message;
+import arreat.core.Message;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

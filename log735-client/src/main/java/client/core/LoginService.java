@@ -1,10 +1,10 @@
 package client.core;
 
 import arreat.api.registry.RegistryEntry;
-import arreat.impl.core.RegistryService;
+import arreat.core.service.RegistryService;
 import arreat.api.registry.Registry;
-import arreat.impl.core.NetService;
-import arreat.api.core.Service;
+import arreat.core.service.NetService;
+import arreat.api.service.Service;
 import client.Client;
 import client.event.LoginEvent;
 import client.ui.ChatScene;

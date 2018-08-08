@@ -1,4 +1,4 @@
-package arreat.impl.net;
+package arreat.core.net;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -6,8 +6,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.LinkedList;
-import java.util.Queue;
 
 public final class NetSocket {
 

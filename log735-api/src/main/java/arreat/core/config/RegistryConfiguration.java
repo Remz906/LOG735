@@ -1,6 +1,6 @@
-package arreat.impl.config;
+package arreat.core.config;
 
-import arreat.impl.registry.BaseEntry;
+import arreat.core.registry.BaseEntry;
 
 import java.util.List;
 

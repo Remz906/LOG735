@@ -1,11 +1,11 @@
-package arreat.impl.core;
+package arreat.core.service;
 
-import arreat.api.core.Service;
-import arreat.impl.config.NetConfiguration;
-import arreat.impl.net.NetSocket;
-import arreat.impl.net.Receiver;
-import arreat.impl.net.Sender;
-import arreat.impl.net.UDPMessage;
+import arreat.api.service.Service;
+import arreat.core.config.NetConfiguration;
+import arreat.core.net.NetSocket;
+import arreat.core.net.Receiver;
+import arreat.core.net.Sender;
+import arreat.core.net.UDPMessage;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import java.net.*;

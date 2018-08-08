@@ -1,4 +1,4 @@
-package arreat.impl;
+package arreat.core;
 
 import java.util.Objects;
 

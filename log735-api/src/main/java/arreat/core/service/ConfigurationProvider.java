@@ -1,6 +1,6 @@
-package arreat.impl.core;
+package arreat.core.service;
 
-import arreat.impl.config.GlobalConfiguration;
+import arreat.core.config.GlobalConfiguration;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;

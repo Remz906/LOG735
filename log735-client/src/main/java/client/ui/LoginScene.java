@@ -1,9 +1,7 @@
 package client.ui;
 
-import arreat.impl.core.NetService;
-import arreat.impl.core.RegistryService;
-import client.Client;
-import client.core.LoginService;
+import arreat.core.service.NetService;
+import arreat.core.service.RegistryService;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -11,8 +9,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
-
-import java.net.UnknownHostException;
 
 public class LoginScene extends Scene {
 

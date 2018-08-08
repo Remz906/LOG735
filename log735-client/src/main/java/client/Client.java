@@ -1,11 +1,11 @@
 package client;
 
 import arreat.api.registry.RegistryEntry;
-import arreat.impl.core.NetService;
-import arreat.impl.core.RegistryService;
-import arreat.impl.net.UDPMessage;
-import arreat.impl.registry.BaseEntry;
-import arreat.impl.registry.RoomBaseEntry;
+import arreat.core.service.NetService;
+import arreat.core.service.RegistryService;
+import arreat.core.net.UDPMessage;
+import arreat.core.registry.BaseEntry;
+import arreat.core.registry.RoomBaseEntry;
 import client.chat.Message;
 import client.ui.ChatScene;
 import client.ui.ChatTabs;

@@ -3,8 +3,8 @@ package server;
 import arreat.db.Client;
 import arreat.db.DatabaseMySQL;
 import arreat.db.Node;
-import arreat.impl.core.NetService;
-import arreat.impl.net.UDPMessage;
+import arreat.core.service.NetService;
+import arreat.core.net.UDPMessage;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 

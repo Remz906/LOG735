@@ -1,4 +1,4 @@
-package arreat.impl.config;
+package arreat.core.config;
 
 public class GlobalConfiguration {
 

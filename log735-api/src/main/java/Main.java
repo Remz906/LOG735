@@ -1,5 +1,5 @@
 import arreat.db.DatabaseH2;
-import arreat.impl.core.NetService;
+import arreat.core.service.NetService;
 
 import java.net.UnknownHostException;
 import java.sql.SQLException;

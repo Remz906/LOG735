@@ -1,8 +1,7 @@
-package arreat.impl.net;
+package arreat.core.net;
 
 import java.net.DatagramPacket;
 import java.util.LinkedList;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by am42010 on 2018-07-04.

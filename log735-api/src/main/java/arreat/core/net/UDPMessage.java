@@ -1,4 +1,4 @@
-package arreat.impl.net;
+package arreat.core.net;
 
 public class UDPMessage {
 

@@ -2,7 +2,7 @@ netConfiguration:
   receivingPort: 1339
 
 registryConfiguration:
-  type: "arreat.impl.registry.CacheRegistry"
+  type: "arreat.core.registry.CacheRegistry"
   remotes:
     - key: "@remote01"
       displayName: "Remote 01"

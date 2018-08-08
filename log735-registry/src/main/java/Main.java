@@ -1,10 +1,8 @@
-import arreat.impl.core.NetService;
+import arreat.core.service.NetService;
 import server.Pair;
 import server.Server;
 
-import java.net.Inet4Address;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.*;
 
 public class Main {
