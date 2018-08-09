@@ -1,5 +1,5 @@
 netConfiguration:
-  receivingPort: 9080
+  receivingPort: 9082
   receivingIp: "127.0.0.1"
 
 registryConfiguration:

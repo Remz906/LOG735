@@ -257,7 +257,7 @@ public class Server implements Runnable {
         if (udpMessage != null) {
           InetSocketAddress target = new InetSocketAddress(udpMessage.getIp(), udpMessage.getPort());
 
-          if (this.isLesserThanMaster(target)) {
+          if (this.isGreaterThanMaster(target)) {
             for (OriginEntry origin : RegistryService.listOrigins()) {
               if (origin.getAddress().equals(target)) {
                 this.setMaster(origin);
@@ -292,6 +292,7 @@ public class Server implements Runnable {
     OriginEntry master = RegistryService.getMasterOrigin();
     return compareAddresses(address, (InetSocketAddress) master.getAddress()) < 0;
   }
+
 
   private boolean isGreaterThanSelf(InetSocketAddress address) {
     Entry self = RegistryService.getSelf();
