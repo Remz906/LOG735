@@ -211,7 +211,7 @@ public class Server implements Runnable {
         UDPMessage udpMessage = NetService.getInstance().receive();
 
         if (udpMessage != null) {
-          SocketAddress target = new InetSocketAddress(udpMessage.getIp(), udpMessage.getPort());
+          InetSocketAddress target = new InetSocketAddress(udpMessage.getIp(), udpMessage.getPort());
           Matcher matcher = MSG_PATTERN.matcher(udpMessage.getMsg());
 
           if (matcher.matches()) {
@@ -254,11 +254,17 @@ public class Server implements Runnable {
           electMaster();
         }
 
-        if (udpMessage != null
-            && this
-            .isLesserThanMaster((InetSocketAddress) RegistryService.getSelf().getAddress())) {
+        if (udpMessage != null) {
+          InetSocketAddress target = new InetSocketAddress(udpMessage.getIp(), udpMessage.getPort());
 
-          this.setMaster((OriginEntry) RegistryService.getSelf());
+          if (this.isLesserThanMaster(target)) {
+            for (OriginEntry origin : RegistryService.listOrigins()) {
+              if (origin.getAddress().equals(target)) {
+                this.setMaster(origin);
+                break;
+              }
+            }
+          }
         }
       }
     } catch (Exception e) {

@@ -35,7 +35,7 @@ public final class NetService implements Service {
   private NetService() throws SocketException {
   }
 
-  public void init() throws SocketException {
+  public void init() {
     this.buffer = new byte[1024];
     this.receiverService = MoreExecutors.getExitingExecutorService(
         (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
@@ -74,18 +74,6 @@ public final class NetService implements Service {
     return this;
   }
 
-  @Deprecated
-  public String getIpAddress() {
-    return ipAddress;
-  }
-
-  @Deprecated
-  public NetService setIpAddress(String ipAddress) {
-    this.ipAddress = ipAddress;
-    return this;
-  }
-
-
   public static synchronized NetService getInstance() {
     return instance;
   }
@@ -95,7 +83,7 @@ public final class NetService implements Service {
       NetService service = instance;
       if (service == null) {
         try {
-          instance = new NetService();
+          instance = new NetService() ;
 
         } catch (SocketException e) {
           throw new RuntimeException(e);
@@ -111,11 +99,7 @@ public final class NetService implements Service {
     this.portNumber = cfg.getReceivingPort();
     NetSocket.getInstance().init(this.portNumber);
 
-    try {
-      this.init();
-    } catch (SocketException e) {
-      e.printStackTrace();
-    }
+    this.init();
   }
 
   @Override
