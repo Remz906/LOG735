@@ -1,7 +1,9 @@
 package client.ui;
 
+import arreat.api.registry.UserEntry;
 import arreat.core.service.NetService;
 import arreat.core.service.RegistryService;
+import com.google.gson.Gson;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -36,7 +38,7 @@ public class LoginScene extends Scene {
             this.loginButton = new Button("Login");
             this.loginButton.setOnMouseClicked(event -> {
                 NetService.getInstance().send(
-                        RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
+                        RegistryService.getInstance().getRegistry().getMasterOrigin().getAddress(),
                         String.format("USER:AUTH:%s:%s", username.getText(), password.getText()));
 
                 username.setText("");
@@ -45,11 +47,14 @@ public class LoginScene extends Scene {
 
             this.registerButton = new Button("Register");
             this.registerButton.setOnMouseClicked(event -> {
-                arreat.db.Client c = new arreat.db.Client(username.getText(), password.getText());
+                UserEntry user = RegistryService.createUser();
+
+                user.setName(username.getText());
+                user.setPassword(password.getText());
 
                 NetService.getInstance().send(
-                        RegistryService.getInstance().getRegistry().getDefaultRemote().getAddress(),
-                        String.format("USER:ADD:%s", c.toString()));
+                        RegistryService.getInstance().getRegistry().getMasterOrigin().getAddress(),
+                        String.format("USER:ADD:%s", new Gson().toJson(user)));
 
                 username.setText("");
                 password.setText("");

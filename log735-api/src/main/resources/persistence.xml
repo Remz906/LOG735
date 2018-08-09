@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://java.sun.com/xml/ns/persistence" version="1.0">
+
+  <!-- MySQL Persistence Unit -->
+  <persistence-unit name="HibernateMysqlUnit">
+    <description>
+      Defines the persistence unit for hibernate used with mysql.
+    </description>
+    <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+    <properties>
+      <property name="hibernate.connection.url" value="jdbc:mysql://localhost:3306/arreat"/>
+      <property name="hibernate.connection.driver_class" value="com.mysql.jdbc.Driver"/>
+      <property name="hibernate.connection.username" value="admin"/>
+      <property name="hibernate.connection.password" value="admin"/>
+      <property name="hibernate.archive.autodetection" value="class"/>
+      <property name="hibernate.show_sql" value="true"/>
+      <property name="hibernate.format_sql" value="true"/>
+      <property name="hibernate.hbm2ddl.auto" value="create"/>
+    </properties>
+    <class>arreat.core.registry.AbstractEntry</class>
+    <class>arreat.core.registry.User</class>
+    <class>arreat.core.registry.Room</class>
+  </persistence-unit>
+
+  <!-- H2 Persistence Unit -->
+  <persistence-unit name="HibernateH2Unit">
+    <description>
+      Defines the persistence unit for hibernate used with h2.
+    </description>
+    <properties>
+      <property name="hibernate.connection.url" value="jdbc:h2:~/arreate"/>
+      <property name="hibernate.connection.driver_class" value="com.mysql.jdbc.Driver"/>
+      <property name="hibernate.connection.username" value="sa"/>
+      <property name="hibernate.connection.password" value=""/>
+      <property name="hibernate.archive.autodetection" value="class"/>
+      <property name="hibernate.show_sql" value="true"/>
+      <property name="hibernate.format_sql" value="true"/>
+      <property name="hibernate.hbm2ddl.auto" value="create"/>
+    </properties>
+    <class>arreat.core.registry.AbstractEntry</class>
+    <class>arreat.core.registry.User</class>
+    <class>arreat.core.registry.Room</class>
+  </persistence-unit>
+</persistence>

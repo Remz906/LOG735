@@ -13,29 +13,29 @@ import java.util.concurrent.TimeUnit;
  */
 public class Sender {
 
-    private final ExecutorService pool;
+  private final ExecutorService pool;
 
-    public Sender(int poolSize) {
-        this.pool = MoreExecutors.getExitingExecutorService(
-                (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
-    }
+  public Sender(int poolSize) {
+    this.pool = MoreExecutors.getExitingExecutorService(
+        (ThreadPoolExecutor) Executors.newFixedThreadPool(1), 1000, TimeUnit.MILLISECONDS);
+  }
 
-    public void send(DatagramPacket packet) {
-        NetSocket.getInstance().send(packet);
+  public void send(DatagramPacket packet) {
+    NetSocket.getInstance().send(packet);
 //        this.pool.submit(new SendingWorker(packet));
+  }
+
+  private static class SendingWorker implements Runnable {
+
+    private final DatagramPacket packet;
+
+    private SendingWorker(DatagramPacket packet) {
+      this.packet = packet;
     }
 
-    private static class SendingWorker implements Runnable {
-
-        private final DatagramPacket packet;
-
-        private SendingWorker(DatagramPacket packet) {
-            this.packet = packet;
-        }
-
-        @Override
-        public void run() {
-            NetSocket.getInstance().send(this.packet);
-        }
+    @Override
+    public void run() {
+      NetSocket.getInstance().send(this.packet);
     }
+  }
 }

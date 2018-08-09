@@ -1,458 +1,599 @@
 package server;
 
-import arreat.db.Client;
-import arreat.db.DatabaseMySQL;
-import arreat.db.Node;
+import arreat.api.registry.Entry;
+import arreat.api.registry.OriginEntry;
+import arreat.api.registry.RoomEntry;
+import arreat.api.registry.UserEntry;
+import arreat.core.service.ConfigurationProvider;
+import arreat.core.service.RegistryService;
 import arreat.core.service.NetService;
 import arreat.core.net.UDPMessage;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
-import java.net.SocketException;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server implements Runnable {
 
-    private static final Pattern MSG_PATTERN;
+  private static final Pattern MSG_PATTERN;
 
-    private static final int HB_TIMER = 5000;
-    private static final String HB_MSG_HEATHER = "HB";
-    private static final String HB_OK = "OK";
-    private static final String HB_DOWN = "DOWN";
-    private static final String HB_UNSTABLE = "UNSTABLE";
+  private static final int HB_TIMER = 5000;
+  private static final String HEARTBEAT_HEADER = "HB";
+  private static final String HB_OK = "OK";
+  private static final String HB_DOWN = "DOWN";
+  private static final String HB_UNSTABLE = "UNSTABLE";
 
-    private static final int MASTER_ELECTION_TIMER = 10000;
-    private static final String MASTER_ELECTION = "ME";
-    private static final String MASTER_FIND_MASTER = "FIND_MASTER";
-    private static final String INFO_IS_MASTER = "isMaster";
-    private static final String INFO_FM_RESPONSE = "FMR";
-    private long beginTimer;
-    private long electionTimer;
-    private long lastBDUpdate; //needed for restore
+  private static final int MASTER_ELECTION_TIMER = 10000;
+  private static final String MASTER_ELECTION = "ME";
+  private static final String MASTER_FIND_MASTER = "FIND_MASTER";
+  private static final String INFO_IS_MASTER = "isMaster";
+  private static final String INFO_FM_RESPONSE = "FMR";
+  private long beginTimer;
+  private long electionTimer;
+  private long lastBDUpdate; //needed for restore
 
-    private static final String USER_HEATHER = "USER";
-    private static final String USER_GET_BY_USER = "GET_BY_USER";
-    private static final String USER_GET_RESPONSE = "GR";
+  private static final String USER_HEADER = "USER";
+  private static final String USER_GET_BY_USER = "GET_BY_USER";
+  private static final String USER_GET_RESPONSE = "GR";
 
-    private static final String NODE_HEATHER = "NODE";
-    private static final String NODE_GET_BY_NAME = "GET_BY_NAME";
+  private static final String ROOM_HEADER = "NODE";
+  private static final String NODE_GET_BY_NAME = "GET_BY_NAME";
 
-    private static final String COMMAND_UPDATE = "UPDATE";
-    private static final String COMMAND_ADD = "ADD";
-    private static final String COMMAND_GOSSIP = "GOSSIP";
-    private static final String COMMAND_DELETE = "DELETE";
-    private static final String COMMAND_UPDATE_ALL = "UPDATE_ALL";
-    private static final String COMMAND_GET_BY_USERNAMES = "GET_BY_USERNAMES";
-
-
-    private static final String UPDATE_MASTER = "UM";
-    private static final String AUTH = "AUTH";
+  private static final String COMMAND_UPDATE = "UPDATE";
+  private static final String COMMAND_ADD = "ADD";
+  private static final String COMMAND_GOSSIP = "GOSSIP";
+  private static final String COMMAND_DELETE = "DELETE";
+  private static final String COMMAND_UPDATE_ALL = "UPDATE_ALL";
+  private static final String COMMAND_GET_BY_USERNAMES = "GET_BY_USERNAMES";
 
 
-    private boolean shutdownRequested = false;
-    private int portNb = 8080;
-    private String ipAdd = "127.0.0.0";
-    private DatabaseMySQL db;
-    private boolean isMaster;
-    private String masterIp;
-    private int masterPort;
-    private Thread hbThread;
-    private List<Pair<String, Integer>> ipAddOfServers;
+  private static final String UPDATE_MASTER = "UM";
+  private static final String AUTH = "AUTH";
 
-    private boolean serverFound;
+  private boolean shutdownRequested = false;
+  private boolean isMaster;
+  private Thread hbThread;
 
+  private final Gson gson;
+  private boolean broadcast;
 
-    public Server(int portNb, String ipAdd, List<Pair<String, Integer>> ipOfServers) throws SocketException {
-        this.ipAdd = ipAdd;
-        this.portNb = portNb;
-        this.ipAddOfServers = ipOfServers;
-        NetService.getInstance().init();
-        init();
+  public Server() {
+    this.gson = new Gson();
+    this.init();
+  }
+
+  private void init() {
+    NetService.getInstance().configure();
+    RegistryService.getInstance().configure();
+    this.lastBDUpdate = 0;
+
+    int port = ConfigurationProvider.getGlobalConfig().getNetConfiguration().getReceivingPort();
+    String ip = ConfigurationProvider.getGlobalConfig().getNetConfiguration().getReceivingIp();
+
+    InetSocketAddress address = new InetSocketAddress(ip, port);
+
+    for (OriginEntry origin : RegistryService.listOrigins()) {
+      if (origin.getAddress().equals(address)) {
+        RegistryService.setSelf(origin);
+      }
     }
 
-    private void init() {
-        db = new DatabaseMySQL();
-        lastBDUpdate = 0;
-        electMaster();
-        initHeartBeatThread();
+    this.electMaster();
+    this.initHeartBeatThread();
+  }
+
+
+  private void electMaster() {
+    System.out.println("Starting master election");
+    this.isMaster = false;
+
+    OriginEntry master = RegistryService.createOrigin();
+    master.setAddress(new InetSocketAddress("127.0.0.1", 0));
+
+    if (electionTimer == 0) {
+      electionTimer = System.currentTimeMillis();
     }
+    sendCommandToAllServers(
+        String.format("%s:%s:%s", MASTER_ELECTION, MASTER_FIND_MASTER,
+            String.valueOf(this.lastBDUpdate)));
+  }
 
+  private void setMaster(OriginEntry master) {
+    this.electionTimer = 0;
+    this.beginTimer = System.currentTimeMillis();
 
-    private void electMaster() {
-        System.out.println("Starting master election");
+    RegistryService.setMasterOrigin(master);
+
+    System.out.println(String.format("New master elected %s", master.toJson()));
+
+    this.isMaster = RegistryService.isSelf(RegistryService.getMasterOrigin());
+
+    if (this.isMaster) {
+      sendCommandToAllClients(
+          String.format("%s:%s:%s", USER_HEADER, UPDATE_MASTER, new Gson().toJson(master)));
+
+      sendCommandToAllServers(
+          String.format("%s:%s:%s", MASTER_ELECTION, UPDATE_MASTER, String.valueOf(lastBDUpdate)));
+    }
+  }
+
+  private void shutdown() {
+    RegistryService.close();
+  }
+
+  private void sendCommandToAllServers(String command) {
+    for (OriginEntry origin : RegistryService.listOrigins()) {
+      if (!RegistryService.isSelf(origin)) {
+        NetService.getInstance().send(origin.getAddress(), command);
+      }
+    }
+  }
+
+  private void sendCommandToAllClients(String command) {
+    for (UserEntry user : RegistryService.listUsers()) {
+      NetService.getInstance().send(user.getAddress(), command);
+    }
+  }
+
+  public void requestShutdown() {
+    this.shutdownRequested = true;
+  }
+
+  private void initHeartBeatThread() {
+    this.hbThread = new Thread(() -> {
+      while (!shutdownRequested) {
         try {
-            isMaster = false;
-            masterIp = "127.0.0.1";
-            masterPort = 0;
-            if (electionTimer == 0)
-                electionTimer = System.currentTimeMillis();
-            sendCommandToAllServers(MASTER_ELECTION + ":" + MASTER_FIND_MASTER + ":" + String.valueOf(lastBDUpdate));
-            //sendCommandToAllServers(MASTER_ELECTION + ":" + UPDATE_MASTER + ":" + String.valueOf(lastBDUpdate));
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-    }
+          Thread.sleep(HB_TIMER);
 
-    private void setMaster(String ip, int portNb) {
-        electionTimer = 0;
-        beginTimer = System.currentTimeMillis();
-        this.masterIp = ip;
-        this.masterPort = portNb;
-        System.out.println("New master elected " + masterIp + ":" + String.valueOf(masterPort));
-        isMaster = (ipAdd.equals(ip) && this.portNb == portNb);
-        if (isMaster) {
-            try {
-                sendCommandToAllClients(USER_HEATHER + ":" + UPDATE_MASTER + ":" + ipAdd + ":" + String.valueOf(portNb));
-                sendCommandToAllServers(MASTER_ELECTION + ":" + UPDATE_MASTER + ":" + String.valueOf(lastBDUpdate));
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
+          OriginEntry master = RegistryService.getMasterOrigin();
+
+          if (master != null && !this.isMaster) {
+            NetService.getInstance().send(master.getAddress(),
+                String.format("%s:%s", HEARTBEAT_HEADER, HB_OK));
+
+          } else if (this.isMaster) {
+            beginTimer = System.currentTimeMillis();
+          }
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+  }
+
+  private void sendACK(String ipAdd, int portNb, String heather) throws UnknownHostException {
+    NetService.getInstance().send(ipAdd, portNb, heather + ":" + "ACK");
+  }
+
+  private void sendACK(SocketAddress target, String header) {
+    NetService.getInstance().send(target, String.format("%s:ACK", header));
+  }
+
+  private boolean authenticateUser(String name, String password) {
+    UserEntry user = RegistryService.getUserByName(name);
+    return user != null && user.getPassword().equals(password);
+  }
+
+  private boolean authenticateRoom(String name, String password) {
+    RoomEntry room = RegistryService.getRoomByName(name);
+    return room != null && room.getPassword().equals(password);
+  }
+
+  private void updateDBIfNeeded(SocketAddress target, long otherDbTime) {
+
+    long threshold = 1000;
+    if (Math.abs(this.lastBDUpdate - otherDbTime) > threshold && lastBDUpdate > otherDbTime) {
+      NetService.getInstance().send(target, String
+          .format("%s:%s:%s", USER_HEADER, COMMAND_UPDATE_ALL,
+              gson.toJson(RegistryService.listUsers())));
+
+      NetService.getInstance().send(target, String
+          .format("%s:%s:%s", ROOM_HEADER, COMMAND_UPDATE_ALL,
+              gson.toJson(RegistryService.listRooms())));
+    }
+  }
+
+
+  @Override
+  public void run() {
+
+    broadcast = false;
+    try {
+      this.hbThread.start();
+      while (!this.shutdownRequested) {
+        UDPMessage udpMessage = NetService.getInstance().receive();
+
+        if (udpMessage != null) {
+          SocketAddress target = new InetSocketAddress(udpMessage.getIp(), udpMessage.getPort());
+          Matcher matcher = MSG_PATTERN.matcher(udpMessage.getMsg());
+
+          if (matcher.matches()) {
+            switch (matcher.group(1)) {
+
+              case HEARTBEAT_HEADER:
+                this.manageHeartbeat(matcher.group(2), target);
+                break;
+
+              case MASTER_ELECTION:
+                this.manageMasterElection(matcher.group(2), target);
+                break;
+
+              case USER_HEADER:
+                this.manageUsers(matcher.group(2), target);
+                break;
+
+              case ROOM_HEADER:
+                this.manageRooms(matcher.group(2), target);
+                break;
             }
+          }
+
+          //propagate throughout the network
+          if (isMaster && broadcast) {
+            System.out.println("SYNCHRONIZING --> " + matcher);
+            sendCommandToAllServers(udpMessage.getMsg());
+          }
+        } else {
+          Thread.sleep(1000);
         }
 
-    }
-
-    private void shutdown() {
-        this.db.disconnect();
-        this.hbThread.destroy();
-    }
-
-    private void sendCommandToAllServers(String command) throws UnknownHostException {
-        for (Pair<String, Integer> server : ipAddOfServers) {
-            if (!ipAdd.equals(server.getL()) || portNb != server.getR())
-                NetService.getInstance().send(server.getL(), server.getR(), command);
+        long curTime = System.currentTimeMillis();
+        if (electionTimer != 0 && Math.abs(curTime - electionTimer) >= 3000) {
+          setMaster((OriginEntry) RegistryService.getSelf());
         }
-    }
 
-    private void sendCommandToAllClients(String command) throws UnknownHostException {
-        List<Client> users = this.db.getAllClients();
-        for (Client clt : users) {
-            NetService.getInstance().send(clt.getIp(), clt.getPort(), command);
+        if (beginTimer != 0 && Math.abs(curTime - beginTimer) >= MASTER_ELECTION_TIMER) {
+          System.out.println("master connection lost");
+          electMaster();
         }
-    }
 
-    public void requestShutdown() {
-        this.shutdownRequested = true;
-    }
+        if (udpMessage != null
+            && this
+            .isLesserThanMaster((InetSocketAddress) RegistryService.getSelf().getAddress())) {
 
-    private void initHeartBeatThread() {
-        this.hbThread = new Thread(() -> {
-            while (!shutdownRequested) {
-                try {
-                    Thread.sleep(HB_TIMER);
-                    if (masterIp != null && masterPort != 0 && !isMaster && (masterPort != portNb)) {
-                        NetService.getInstance().send(this.masterIp, this.masterPort, HB_MSG_HEATHER + ":" + HB_OK);
-                    } else if (isMaster) {
-                        beginTimer = System.currentTimeMillis();
-                    }
-                } catch (InterruptedException | UnknownHostException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        });
-    }
-
-    public void sendACK(String ipAdd, int portNb, String heather) throws UnknownHostException {
-        NetService.getInstance().send(ipAdd, portNb, heather + ":" + "ACK");
-    }
-
-    private boolean authClt(String pseudo, String pass) {
-        Client cltTrue = this.db.getClientByPseudo(pseudo);
-        return cltTrue.getPwd().equals(pass);
-    }
-
-    private boolean authNode(String name, String pass) {
-        Node node = this.db.getNodeByName(name);
-        if (node != null) {
-            return node.getPwd().equals(pass);
+          this.setMaster((OriginEntry) RegistryService.getSelf());
         }
-        return false;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+
+    } finally {
+      this.shutdown();
     }
+  }
 
-    private void updateDBIfNeeded(String ip, int portNb, long otherDbTime) throws UnknownHostException {
+  private int compareAddresses(InetSocketAddress address1, InetSocketAddress address2) {
+    BigInteger val1 = new BigInteger(address1.getHostName().getBytes());
+    val1 = val1.add(BigInteger.valueOf(address1.getPort()));
 
-        long threshold = 1000;
-        if (Math.abs(this.lastBDUpdate - otherDbTime) > threshold && lastBDUpdate > otherDbTime) {
-            List<Client> updatedCltList = this.db.getAllClients();
-            List<Node> updatedNodeList = this.db.getAllNode();
-            Gson gson = new Gson();
-            NetService.getInstance().send(ip, portNb, USER_HEATHER + ":" + COMMAND_UPDATE_ALL + ":" + gson.toJson(updatedCltList));
-            NetService.getInstance().send(ip, portNb, NODE_HEATHER + ":" + COMMAND_UPDATE_ALL + ":" + gson.toJson(updatedNodeList));
+    BigInteger val2 =
+        new BigInteger(address2.getHostName().getBytes());
+
+    val2 =
+        val2.add(BigInteger.valueOf(address2.getPort()));
+
+    return val1.compareTo(val2);
+  }
+
+  private boolean isLesserThanMaster(InetSocketAddress address) {
+    OriginEntry master = RegistryService.getMasterOrigin();
+    return compareAddresses(address, (InetSocketAddress) master.getAddress()) < 0;
+  }
+
+  private boolean isGreaterThanSelf(InetSocketAddress address) {
+    Entry self = RegistryService.getSelf();
+    return compareAddresses(address, (InetSocketAddress) self.getAddress()) > 0;
+  }
+
+  private boolean isLesserThanSelf(InetSocketAddress address) {
+    Entry self = RegistryService.getSelf();
+    return compareAddresses(address, (InetSocketAddress) self.getAddress()) < 0;
+  }
+
+  private void manageRooms(String message, SocketAddress target) {
+    Matcher matcher = MSG_PATTERN.matcher(message);
+
+    if (matcher.matches()) {
+
+      switch (matcher.group(1)) {
+        case COMMAND_ADD:
+        case COMMAND_UPDATE:
+          this.manageRoomEntry(matcher.group(2), target);
+          break;
+
+        case COMMAND_UPDATE_ALL:
+          this.manageRoomEntries(matcher.group(2), target);
+          break;
+
+        case COMMAND_DELETE:
+          this.manageRoomDelete(matcher.group(2), target);
+
+          break;
+        case NODE_GET_BY_NAME:
+          this.manageRoomRequest(matcher.group(2), target);
+          break;
+
+        case AUTH:
+          String[] values = matcher.group(2).split(":");
+          this.manageRoomAuthentication(values[0], values[1], target);
+          break;
+      }
+    }
+    this.lastBDUpdate = System.currentTimeMillis();
+  }
+
+  private void manageRoomAuthentication(String name, String password, SocketAddress target) {
+    RoomEntry room = RegistryService.getRoomByName(name);
+
+    // Get new member
+    UserEntry member = RegistryService
+        .getUserByAddress(((InetSocketAddress) target).getHostName(),
+            ((InetSocketAddress) target).getPort());
+
+    if (room != null && this.authenticateRoom(name, password)) {
+
+      UserEntry owner = room.getOwner();
+
+      room.add(member);
+      RegistryService.save(room);
+
+      NetService.getInstance().send(owner.getAddress(),
+          String.format("%s:%s:%s", ROOM_HEADER, room.getName(), member.toJson()));
+
+      // Workaround to set the right name for the conversation.
+      String json = owner.toJson().replaceAll("\"name\":\"(\\w+)\"",
+          String.format("\"name\":\"%s\"", room.getName()));
+
+      NetService.getInstance().send(target,
+          String.format("%s:%s:%s", ROOM_HEADER, AUTH, json));
+
+    } else if (room == null) {
+      room = RegistryService.createRoom();
+      room.setOwner(member);
+      room.setName(name);
+      room.setPassword(password);
+
+      RegistryService.save(room);
+
+      NetService.getInstance().send(target, String.format("%s:CREATED:%s", ROOM_HEADER, name));
+      sendCommandToAllServers(String.format("%s:%s:%s", ROOM_HEADER, COMMAND_ADD, room.toJson()));
+
+    } else {
+      NetService.getInstance().send(target, String.format("%s:%s:Failed", USER_HEADER, AUTH));
+    }
+  }
+
+  private void manageRoomRequest(String name, SocketAddress target) {
+    NetService.getInstance().send(target,
+        String.format("%s:%s:%s", USER_HEADER, USER_GET_RESPONSE,
+            RegistryService.getRoomByName(name).toJson()));
+  }
+
+  private void manageRoomDelete(String json, SocketAddress target) {
+    RoomEntry room = RegistryService.roomFromJson(json);
+    RegistryService.save(room);
+
+    this.sendACK(target, ROOM_HEADER);
+
+    this.broadcast = true;
+  }
+
+  private void manageRoomEntries(String json, SocketAddress target) {
+    List<? extends RoomEntry> rooms = RegistryService.roomListFromJson(json);
+    RegistryService.saveAll(rooms);
+
+    this.sendACK(target, ROOM_HEADER);
+
+    this.broadcast = true;
+  }
+
+  private void manageRoomEntry(String json, SocketAddress target) {
+    RoomEntry room = RegistryService.roomFromJson(json);
+    RegistryService.save(room);
+
+    this.sendACK(target, ROOM_HEADER);
+
+    this.broadcast = true;
+  }
+
+  private void manageUsers(String message, SocketAddress target) throws UnknownHostException {
+    Matcher matcher = MSG_PATTERN.matcher(message);
+
+    if (matcher.matches()) {
+      switch (matcher.group(1)) {
+        case COMMAND_ADD:
+          this.manageUserCreate(matcher.group(2), target);
+          break;
+
+        case COMMAND_UPDATE:
+          this.manageUserUpdate(matcher.group(2), target);
+          break;
+
+        case COMMAND_UPDATE_ALL:
+          this.manageUsersUpdate(matcher.group(2), target);
+          break;
+
+        case COMMAND_DELETE:
+          this.manageUserDelete(matcher.group(2), target);
+          break;
+
+        case USER_GET_BY_USER:
+          this.manageUserRequest(matcher.group(2), target);
+          break;
+
+        case COMMAND_GET_BY_USERNAMES:
+          this.manageUserListRequest(matcher.group(2), target);
+          break;
+
+        case AUTH:
+          String[] values = matcher.group(2).split(":");
+
+          this.manageUserAuthentication(values[0], values[1], target);
+          break;
+      }
+    }
+  }
+
+  private void manageUserAuthentication(String name, String password, SocketAddress target) {
+
+    if (this.authenticateUser(name, password)) {
+      UserEntry user = RegistryService.getUserByName(name);
+
+      // Update the address of the user if needed.
+      if (!user.getAddress().equals(target)) {
+        user.setAddress(target);
+
+        RegistryService.save(user);
+
+        // Don't use the default toJson, cause it doesn't returns passwords.
+        this.sendCommandToAllServers(
+            String.format("%s:%s:%s", USER_HEADER, COMMAND_UPDATE, this.gson.toJson(user)));
+
+        this.broadcast = false;
+      }
+
+      NetService.getInstance().send(target,
+          String.format("%s:%s:%s", USER_HEADER, AUTH, user.toJson()));
+
+    } else {
+      NetService.getInstance().send(target, String.format("%s:%s:Failed", USER_HEADER, AUTH));
+    }
+  }
+
+  private void manageUserRequest(String name, SocketAddress target) {
+    UserEntry user = RegistryService.getUserByName(name);
+
+    NetService.getInstance().send(target,
+        String.format("%s:%s:%s", USER_HEADER, USER_GET_RESPONSE, user.toJson()));
+  }
+
+  private void manageUserDelete(String json, SocketAddress target) {
+    UserEntry user = RegistryService.userFromJson(json);
+    RegistryService.delete(user);
+
+    this.lastBDUpdate = System.currentTimeMillis();
+    this.sendACK(target, USER_HEADER);
+
+    this.broadcast = true;
+  }
+
+  private void manageUsersUpdate(String json, SocketAddress target) {
+    List<? extends UserEntry> users = RegistryService.userListFromJson(json);
+    RegistryService.saveAll(users);
+
+    this.lastBDUpdate = System.currentTimeMillis();
+    this.sendACK(target, USER_HEADER);
+
+    this.broadcast = true;
+  }
+
+  private void manageUserUpdate(String json, SocketAddress target) {
+    UserEntry user = RegistryService.userFromJson(json);
+    user.setAddress(target);
+
+    RegistryService.save(user);
+
+    this.lastBDUpdate = System.currentTimeMillis();
+    this.sendACK(target, USER_HEADER);
+
+    this.broadcast = true;
+  }
+
+  private void manageUserCreate(String json, SocketAddress target) {
+    UserEntry user = RegistryService.userFromJson(json);
+    user.setAddress(target);
+
+    if (RegistryService.getUserByName(user.getName()) == null) {
+      RegistryService.save(user);
+      this.lastBDUpdate = System.currentTimeMillis();
+
+      NetService.getInstance().send(target,
+          String.format("%s:%s:%s", USER_HEADER, AUTH, user.toJson()));
+
+    } else {
+      NetService.getInstance().send(target, String.format("%s:%s:Failed", USER_HEADER, AUTH));
+    }
+    this.broadcast = true;
+  }
+
+  private void doMasterElection(SocketAddress target) {
+    if (this.isGreaterThanMaster((InetSocketAddress) target)) {
+      if (this.isGreaterThanSelf((InetSocketAddress) target)) {
+        for (OriginEntry origin : RegistryService.listOrigins()) {
+          if (origin.getAddress().equals(target)) {
+            this.setMaster(origin);
+          }
         }
+      } else {
+        this.setMaster((OriginEntry) RegistryService.getSelf());
+      }
     }
+  }
 
+  private void manageMasterElection(String message, SocketAddress target) {
+    Matcher matcher = MSG_PATTERN.matcher(message);
 
-    @Override
-    public void run() {
+    if (matcher.matches()) {
+      switch (matcher.group(1)) {
+        case MASTER_FIND_MASTER:
+        case UPDATE_MASTER:
+          this.doMasterElection(target);
 
-        boolean gossip = false;
-        try {
-            this.hbThread.start();
-            while (!this.shutdownRequested) {
-                UDPMessage udpMessage = NetService.getInstance().receive();
-                if (udpMessage != null) {
+          NetService.getInstance().send(target,
+              String.format("%s:%s:%s", MASTER_ELECTION, INFO_FM_RESPONSE,
+                  String.valueOf(lastBDUpdate)));
 
+          updateDBIfNeeded(target, Long.parseLong(matcher.group(2)));
+          break;
 
-                    Gson gson = new Gson();
-                    Matcher msg = MSG_PATTERN.matcher(udpMessage.getMsg()); //.split(":");
-                    if (msg.matches()) {
-                        switch (msg.group(1)) {
+        case INFO_FM_RESPONSE:
+          this.doMasterElection(target);
 
-                            case HB_MSG_HEATHER:
-                                if (HB_OK.equals(msg.group(2))) {
-                                    sendACK(udpMessage.getIp(), udpMessage.getPort(), HB_MSG_HEATHER);
-                                    beginTimer = System.currentTimeMillis();
-                                } else if ("ACK".equals(msg.group(2))) {
-                                    beginTimer = System.currentTimeMillis();
-                                }
-                                break;
-
-                            case MASTER_ELECTION:
-                                msg = MSG_PATTERN.matcher(msg.group(2));
-
-                                if (msg.matches()) {
-                                    switch (msg.group(1)) {
-                                        case MASTER_FIND_MASTER:
-                                            if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
-                                                    setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                                } else {
-                                                    setMaster(this.ipAdd, this.portNb);
-                                                }
-
-                                            }
-                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
-                                            updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
-                                            break;
-                                        case INFO_FM_RESPONSE:
-                                            if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
-                                                    setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                                } else {
-                                                    setMaster(this.ipAdd, this.portNb);
-                                                }
-
-                                            }
-                                            updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
-                                            break;
-                                        case UPDATE_MASTER:
-
-                                            if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.masterIp, this.masterPort)) {
-                                                if (Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort()) > Utilities.ipAndPortToLong(this.ipAdd, this.portNb)) {
-                                                    setMaster(udpMessage.getIp(), udpMessage.getPort());
-                                                } else {
-                                                    setMaster(this.ipAdd, this.portNb);
-                                                }
-
-                                            }
-                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), MASTER_ELECTION + ":" + INFO_FM_RESPONSE + ":" + String.valueOf(lastBDUpdate));
-                                            updateDBIfNeeded(udpMessage.getIp(), udpMessage.getPort(), Long.parseLong(msg.group(2)));
-                                            break;
-                                    }
-
-
-                                }
-                                break;
-
-                            case USER_HEATHER:
-                                msg = MSG_PATTERN.matcher(msg.group(2));
-                                Client clt;
-                                List<Client> cltList;
-
-                                if (msg.matches()) {
-                                    switch (msg.group(1)) {
-                                        case COMMAND_ADD:
-                                            gossip = true;
-                                            clt = gson.fromJson(msg.group(2), Client.class);
-                                            clt.setIp(udpMessage.getIp());
-                                            clt.setPort(udpMessage.getPort());
-                                            if (this.db.getClientByPseudo(clt.getPseudo()) == null) {
-                                                this.db.newClient(clt);
-                                                this.lastBDUpdate = System.currentTimeMillis();
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
-                                            } else {
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
-                                            }
-                                            break;
-                                        case COMMAND_UPDATE:
-                                            gossip = true;
-                                            clt = gson.fromJson(msg.group(2), Client.class);
-                                            clt.setIp(udpMessage.getIp());
-                                            clt.setPort(udpMessage.getPort());
-                                            this.db.updateClt(clt);
-                                            this.lastBDUpdate = System.currentTimeMillis();
-                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
-                                            break;
-                                        case COMMAND_UPDATE_ALL:
-                                            gossip = true;
-                                            cltList = gson.fromJson(msg.group(2), new TypeToken<List<Client>>() {
-                                            }.getType());
-                                            this.db.updateAllClt(cltList);
-                                            this.lastBDUpdate = System.currentTimeMillis();
-                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
-                                            break;
-                                        case COMMAND_DELETE:
-                                            gossip = true;
-                                            clt = gson.fromJson(msg.group(2), Client.class);
-                                            this.db.deleteClt(clt);
-                                            this.lastBDUpdate = System.currentTimeMillis();
-                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER);
-                                            break;
-                                        case USER_GET_BY_USER:
-                                            clt = this.db.getClientByPseudo(msg.group(2));
-                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(clt));
-                                            break;
-                                        case COMMAND_GET_BY_USERNAMES:
-                                            List<String> cltNameList = gson.fromJson(msg.group(2), new TypeToken<List<String>>() {
-                                            }.getType());
-                                            cltList = this.db.getCltsByUsername(cltNameList);
-                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + COMMAND_GET_BY_USERNAMES + ":" + gson.toJson(cltList));
-                                            break;
-
-                                        case AUTH:
-                                            String[] msgSplit = msg.group(2).split(":");
-
-                                            boolean auth = authClt(msgSplit[0], msgSplit[1]);
-
-                                            if (auth) {
-                                                clt = this.db.getClientByPseudo(msgSplit[0]);
-
-                                                //update if needed
-                                                if (!(clt.getIp().equals(udpMessage.getIp()) && clt.getPort() == udpMessage.getPort())) {
-                                                    clt.setIp(udpMessage.getIp());
-                                                    clt.setPort(udpMessage.getPort());
-                                                    this.db.updateClt(clt);
-                                                    sendCommandToAllServers(USER_HEATHER + ":" + COMMAND_UPDATE + ":" + gson.toJson(clt));
-                                                    gossip = false;
-                                                }
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":" + gson.toJson(clt));
-
-                                            } else {
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
-                                            }
-                                            break;
-                                    }
-                                }
-                                break;
-
-                            case NODE_HEATHER:
-                                Node node;
-                                msg = MSG_PATTERN.matcher(msg.group(2));
-
-                                if (msg.matches()) {
-
-                                    switch (msg.group(1)) {
-                                        case COMMAND_ADD:
-                                            gossip = true;
-                                            node = gson.fromJson(msg.group(2), Node.class);
-                                            this.db.newNode(node);
-                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                            break;
-                                        case COMMAND_UPDATE:
-                                            gossip = true;
-                                            node = gson.fromJson(msg.group(2), Node.class);
-                                            this.db.updateNode(node);
-                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                            break;
-                                        case COMMAND_UPDATE_ALL:
-                                            gossip = true;
-                                            List<Node> nodeList = gson.fromJson(msg.group(2), new TypeToken<List<Node>>() {
-                                            }.getType());
-                                            this.db.updateAllNode(nodeList);
-                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                            break;
-                                        case COMMAND_DELETE:
-                                            gossip = true;
-                                            node = gson.fromJson(msg.group(2), Node.class);
-                                            this.db.deleteNode(node);
-                                            this.sendACK(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER);
-                                            break;
-                                        case NODE_GET_BY_NAME:
-                                            node = this.db.getNodeByName(msg.group(2));
-                                            NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + USER_GET_RESPONSE + ":" + gson.toJson(node));
-                                            break;
-                                        case AUTH:
-                                            //2 = roomName 3 = pass
-                                            String[] msgSplit = msg.group(2).split(":");
-
-                                            boolean auth = authNode(msgSplit[0], msgSplit[1]);
-                                            if (auth) {
-                                                node = this.db.getNodeByName(msgSplit[0]);
-                                                Client masterClt = this.db.getClientByPseudo(node.getMasterUser());
-
-                                                // Workaround to set the right name for the conversation.
-                                                masterClt.setPseudo(msgSplit[0]);
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + AUTH + ":" + gson.toJson(masterClt));
-
-
-                                                //get new client
-                                                clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
-
-                                                //should be added to db here
-                                                /////
-
-
-                                                NetService.getInstance().send(masterClt.getIp(), masterClt.getPort(), NODE_HEATHER + ":" + node.getName() + ":" + gson.toJson(clt));
-
-
-                                            } else if (this.db.getNodeByName(msgSplit[0]) == null) {
-                                                clt = this.db.getClientByInetAddress(udpMessage.getIp(), udpMessage.getPort());
-                                                node = new Node(msgSplit[0], clt.getPseudo(), msgSplit[1]);
-                                                this.db.newNode(node);
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), NODE_HEATHER + ":" + "CREATED" + ":" + msgSplit[0]);
-                                                sendCommandToAllServers(NODE_HEATHER + ":" + COMMAND_ADD + ":" + gson.toJson(node));
-                                            } else {
-                                                NetService.getInstance().send(udpMessage.getIp(), udpMessage.getPort(), USER_HEATHER + ":" + AUTH + ":Failed");
-                                            }
-
-                                            break;
-
-                                    }
-                                }
-                                this.lastBDUpdate = System.currentTimeMillis();
-                                break;
-
-                        }
-                    }
-
-
-                    //propagate throughout the network
-                    if (isMaster && gossip) {
-                        System.out.println("GOSSIPING --> " + msg);
-                        sendCommandToAllServers(udpMessage.getMsg());
-                    }
-                } else {
-                    System.out.println("no msg received " + String.valueOf(portNb) + " masterPort " + String.valueOf(this.masterPort));
-                    Thread.sleep(1000);
-                }
-
-                long curTime = System.currentTimeMillis();
-                if (electionTimer != 0 && Math.abs(curTime - electionTimer) >= 3000) {
-                    setMaster(this.ipAdd, this.portNb);
-                }
-
-                if (beginTimer != 0 && Math.abs(curTime - beginTimer) >= MASTER_ELECTION_TIMER) {
-                    System.out.println("master connection lost");
-                    electMaster();
-                }
-
-                if (udpMessage != null && Utilities.ipAndPortToLong(this.masterIp, this.masterPort) < Utilities.ipAndPortToLong(udpMessage.getIp(), udpMessage.getPort())) {
-                    setMaster(udpMessage.getIp(), udpMessage.getPort());
-                }
-
-
-            }
-        } catch (Exception e) {
-            System.out.println(e);
-        } finally {
-            shutdown();
-        }
+          updateDBIfNeeded(target, Long.parseLong(matcher.group(2)));
+          break;
+      }
     }
+  }
 
-    static {
-        MSG_PATTERN = Pattern.compile("(\\w+):(.+)");
+  private void manageHeartbeat(String message, SocketAddress target) {
+    if (HB_OK.equals(message)) {
+      this.sendACK(target, HEARTBEAT_HEADER);
+      this.beginTimer = System.currentTimeMillis();
+
+    } else if ("ACK".equals(message)) {
+      this.beginTimer = System.currentTimeMillis();
     }
+  }
+
+  private void manageUserListRequest(String json, SocketAddress requester) {
+    List<String> names = this.gson.fromJson(json, new TypeToken<List<String>>() {
+    }.getType());
+    List<UserEntry> users = new ArrayList<>();
+
+    for (String name : names) {
+      UserEntry u = RegistryService.getUserByName(name);
+
+      if (u != null) {
+        users.add(u);
+      }
+    }
+    NetService.getInstance().send(requester,
+        String.format("%s:%s:%s", USER_HEADER, COMMAND_GET_BY_USERNAMES, gson.toJson(users)));
+  }
+
+  private boolean isGreaterThanMaster(InetSocketAddress address) {
+    OriginEntry master = RegistryService.getMasterOrigin();
+    return compareAddresses(address, (InetSocketAddress) master.getAddress()) > 0;
+  }
+
+  static {
+    MSG_PATTERN = Pattern.compile("(\\w+):(.+)");
+  }
 }

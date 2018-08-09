@@ -1,6 +1,6 @@
 package client.core;
 
-import arreat.api.registry.RegistryEntry;
+import arreat.api.registry.Entry;
 import arreat.core.service.RegistryService;
 import arreat.api.registry.Registry;
 import arreat.core.service.NetService;
@@ -20,7 +20,7 @@ public final class LoginService implements Service {
     public void login(String username, String password) {
         Registry registry = RegistryService.getInstance().getRegistry();
 
-        RegistryEntry defaultRemote = registry.getDefaultRemote();
+        Entry defaultRemote = registry.getMasterOrigin();
 
         NetService.getInstance().send(defaultRemote.getAddress(), String.format("UF:AUTH:%s:%s", username, password));
     }

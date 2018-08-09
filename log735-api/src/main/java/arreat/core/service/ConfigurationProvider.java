@@ -8,32 +8,32 @@ import java.io.InputStream;
 
 public final class ConfigurationProvider {
 
-    private static volatile ConfigurationProvider instance;
+  private static volatile ConfigurationProvider instance;
 
-    private GlobalConfiguration config;
+  private GlobalConfiguration config;
 
-    private ConfigurationProvider() {
-        try (InputStream in = this.getClass().getClassLoader().getResourceAsStream("config.yml")) {
-            Yaml yaml = new Yaml();
+  private ConfigurationProvider() {
+    try (InputStream in = this.getClass().getClassLoader().getResourceAsStream("config.yml")) {
+      Yaml yaml = new Yaml();
 
-            this.config = yaml.loadAs(in, GlobalConfiguration.class);
+      this.config = yaml.loadAs(in, GlobalConfiguration.class);
 
-        } catch (IOException e) {
-            throw new RuntimeException("Error could not load configuration", e);
-        }
+    } catch (IOException e) {
+      throw new RuntimeException("Error could not load configuration", e);
     }
+  }
 
-    public static synchronized GlobalConfiguration getGlobalConfig() {
-        return instance.config;
+  public static synchronized GlobalConfiguration getGlobalConfig() {
+    return instance.config;
+  }
+
+  static {
+    synchronized (ConfigurationProvider.class) {
+      ConfigurationProvider provider = instance;
+
+      if (provider == null) {
+        instance = new ConfigurationProvider();
+      }
     }
-
-    static {
-        synchronized (ConfigurationProvider.class) {
-            ConfigurationProvider provider = instance;
-
-            if (provider == null) {
-                instance = new ConfigurationProvider();
-            }
-        }
-    }
+  }
 }

@@ -2,11 +2,11 @@ package arreat.api.service;
 
 public interface Service {
 
-    void configure();
+  void configure();
 
-    EventManager getEventManager();
+  EventManager getEventManager();
 
-    interface EventManager {
+  interface EventManager {
 
-    }
+  }
 }

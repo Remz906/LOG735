@@ -1,2 +1,15 @@
 netConfiguration:
-  receivingPort: 9082
+  receivingPort: 9080
+  receivingIp: "127.0.0.1"
+
+registryConfiguration:
+  type: "arreat.core.registry.MysqlRegistry"
+  remotes:
+    - name: "@remote01"
+      displayName: "Remote 01"
+      ip: "127.0.0.1"
+      port: 9080
+    - name: "@remote02"
+      displayName: "Remote 02"
+      ip: "127.0.0.1"
+      port: 9082

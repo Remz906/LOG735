@@ -1,14 +1,14 @@
 netConfiguration:
-  receivingPort: 1339
+  receivingPort: 1337
 
 registryConfiguration:
   type: "arreat.core.registry.CacheRegistry"
   remotes:
-    - key: "@remote01"
+    - name: "@remote01"
       displayName: "Remote 01"
-      netAddress: "10.192.178.64"
-      port: 9080
-    - key: "@remote02"
+      ip: "127.0.0.1"
+      port: 9082
+    - name: "@remote02"
       displayName: "Remote 02"
-      netAddress: "10.192.179.121"
+      ip: "127.0.0.1"
       port: 9080
